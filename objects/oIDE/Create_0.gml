@@ -1,4 +1,5 @@
 text_editing = "";
+text_editing_last = text_editing;
 seperated_text = [];
 
 surface = -1;
@@ -8,9 +9,36 @@ line_seperation = 20;
 character_seperation = 10;
 tab_width = 30;
 sidebar_width = 25;
+
 cursor_offset = 1;
 cursor_line = 0;
 cursor_offset_on_line = 0;
+
+dragging = -1;
+horizontal_resize = false;
+verticle_resize = false;
+
+tokens = ds_list_create();
+enum TOKENTYPE {
+	SYMBOL,
+	NUMBER,
+	SEMI_COLON,
+	ADD,
+	MULT,
+	SUBTRACT,
+	DIVIDE,
+	STRING,
+	OPEN_CURLY,
+	CLOSE_CURLY,
+	OPEN_PAREN,
+	CLOSE_PAREN,
+	END
+}
+function token(_type, _value) constructor {
+	type = _type;
+	if(!is_undefined(_value)) value = _value;
+	else value = -1;
+}
 
 function move_cursor(horizontal, verticle) {
 	// Horizontal
@@ -39,12 +67,12 @@ function move_cursor(horizontal, verticle) {
 		cursor_line = _new_pos;
 	}
 	cursor_offset = clamp(cursor_offset, 1, string_length(text_editing) + 1);
-	show_debug_message("Offset: " + string(cursor_offset) + " | Line" + string(cursor_line) + " | Offset on line: " + string(cursor_offset_on_line));
+	//show_debug_message("Offset: " + string(cursor_offset) + " | Line" + string(cursor_line) + " | Offset on line: " + string(cursor_offset_on_line));
 }
 move_cursor(0, 0);
 t = 0;
 
-key_hold_time = 30;
+key_hold_time = 40;
 key_hold_acceleration = 2;
 function character(_code, _uppercase, _lowercase) constructor {
 	if(_uppercase == "" && _lowercase != "") uppercase = string_upper(_lowercase);
@@ -103,6 +131,7 @@ valid_characters = [
 	new character(vk_enter, "\n", ""),
 	new character(vk_tab, "\t", ""),
 	new character(vk_backspace, "", ""),
+	new character(vk_delete, "", ""),
 	new character(vk_left, "", ""),
 	new character(vk_right, "", ""),
 	new character(vk_up, "", ""),
@@ -122,4 +151,9 @@ for(var i = 0; i < array_length(valid_characters); i++) {
 	if(is_string(valid_characters[i])) {
 		valid_characters[i] = ord(valid_characters[i]);
 	}
+}
+
+function close() { // for closing the window
+	
+	
 }
