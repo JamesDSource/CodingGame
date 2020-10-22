@@ -152,7 +152,7 @@ if(text_editing != text_editing_last) {
 				_peek_index--;
 				var _symbol = string_copy(text_editing, i, _peek_index-i + 1);
 				i = _peek_index;
-				ds_list_add(tokens, new token(TOKENTYPE.SYMBOL, _symbol));
+				ds_list_add(tokens, new token(TOKENTYPE.VARIABLE, _symbol));
 				break;
 			case "0": // Numbers
 			case "1":
@@ -187,9 +187,12 @@ if(text_editing != text_editing_last) {
 			
 			case ";": // Semi Colon
 				ds_list_add(tokens, new token(TOKENTYPE.SEMI_COLON));
+			case "=": // Addition
+				ds_list_add(tokens, new token(TOKENTYPE.ASSIGN));
+				break;
 			case "+": // Addition
 				ds_list_add(tokens, new token(TOKENTYPE.ADD));
-				break;
+				break
 			case "*": // Multiplication
 				ds_list_add(tokens, new token(TOKENTYPE.MULT));
 				break;
@@ -214,11 +217,24 @@ if(text_editing != text_editing_last) {
 			
 		}
 	}
-	ds_list_add(tokens, new token(TOKENTYPE.END));
 	text_editing_last = text_editing;
 	show_debug_message("------------------------------------------");
 	for(var i = 0; i < ds_list_size(tokens); i++) {
 		show_debug_message(tokens[| i]);
 	}
+	
+
+	var _command_tokens = [];
+	parsed_commands = [];
+	for(var i = 0; i < ds_list_size(tokens); i++) {
+		if(tokens[| i].type != TOKENTYPE.SEMI_COLON) _command_tokens = array_append(_command_tokens, tokens[| i]);
+		else {
+			parsed_commands = array_append(parsed_commands, parse(_command_tokens));
+			_command_tokens = [];
+			i++;
+		}
+	}
 }
 #endregion
+
+if(keyboard_check_pressed(vk_f4)) run();

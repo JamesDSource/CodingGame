@@ -1,6 +1,7 @@
 text_editing = "";
 text_editing_last = text_editing;
 seperated_text = [];
+parsed_commands = [];
 
 surface = -1;
 left_margin = 30;
@@ -20,7 +21,9 @@ verticle_resize = false;
 
 tokens = ds_list_create();
 enum TOKENTYPE {
-	SYMBOL,
+	PARSED,
+	VARIABLE,
+	ASSIGN,
 	NUMBER,
 	SEMI_COLON,
 	ADD,
@@ -31,8 +34,7 @@ enum TOKENTYPE {
 	OPEN_CURLY,
 	CLOSE_CURLY,
 	OPEN_PAREN,
-	CLOSE_PAREN,
-	END
+	CLOSE_PAREN
 }
 function token(_type, _value) constructor {
 	type = _type;
@@ -153,7 +155,170 @@ for(var i = 0; i < array_length(valid_characters); i++) {
 	}
 }
 
-function close() { // for closing the window
+#region nodes for the parser
+function parse_node_parsed(_value) constructor{
+	id = other.id;
+	value = _value;
+	
+	function get_result() {
+		return value.get_result();	
+	}
+}
+function parse_node_number(_value) constructor{
+	id = other.id;
+	value = _value;
+	
+	function get_result() {
+		return value;	
+	}
+}
+
+function parse_node_variable(_name) constructor{
+	id = other.id;
+	is_variable = true;
+	name = _name;
+	
+	function get_result() {
+		return variable_get(name);
+	}
+}
+
+function parse_node_binary_operation(_left, _right, _operation) constructor{
+	id = other.id;
+	left = _left;
+	right = _right;
+	operation = _operation;
+	
+	function get_result() {
+		var _left_result = 0;
+		var _right_result = 0;
+		if(is_struct(left))  _left_result = left.get_result();	
+		if(is_struct(right)) _right_result = right.get_result();
+		
+		switch(operation) {
+			case TOKENTYPE.ADD: return _left_result + _right_result;
+			case TOKENTYPE.SUBTRACT: return _left_result - _right_result;
+			case TOKENTYPE.MULT: return _left_result * _right_result;
+			case TOKENTYPE.DIVIDE: return _left_result / _right_result;
+		}
+	}
+}
+
+function parse_node_assignment(_left, _right) constructor{
+	id = other.id;
+	left = _left;
+	right = _right;
+	
+	function get_result() {
+		var _right_result = 0;
+		if(is_struct(right)) _right_result = right.get_result();
+		
+		if(is_struct(left) && variable_struct_exists(left, "is_variable")) {
+			variable_set(left.name, _right_result);
+			return left.name + " = " + string(variable_get(left.name));
+		}
+	}
+}
+#endregion
+
+function parse(_tokens) { // Parces an array of token
+	// check for parenthesis
+	var _paren_error = false;
+	while(!_paren_error && array_has_struct(_tokens, "type", TOKENTYPE.OPEN_PAREN)) {
+		for(var i = 0; i < array_length(_tokens); i++) {
+			if(_tokens[i].type == TOKENTYPE.OPEN_PAREN) {
+				var _pair_pos = find_pair_position(_tokens, i, TOKENTYPE.OPEN_PAREN, TOKENTYPE.CLOSE_PAREN);
+				if(_pair_pos != -1) {
+					var _paren_tokens = [];
+					var _len = _pair_pos-i;
+					array_copy(_paren_tokens, 0, _tokens, i+1, _len-1);
+					repeat(_len) _tokens = array_delete(_tokens, i);
+					_paren_tokens = [new token(TOKENTYPE.PARSED, parse(_paren_tokens))];
+					array_copy(_tokens, i, _paren_tokens, 0, 1);
+				}
+				else _paren_error = true;
+			}
+		}
+	}
+	var _priority = [
+		[TOKENTYPE.ASSIGN],
+		[TOKENTYPE.ADD, TOKENTYPE.SUBTRACT],
+		[TOKENTYPE.MULT, TOKENTYPE.DIVIDE],
+		[TOKENTYPE.NUMBER, TOKENTYPE.VARIABLE, TOKENTYPE.PARSED]
+	]
+	for(var i = array_length(_tokens)-1; i >= 0; i--) {	
+		for(var j = 0; j < array_length(_priority); j++) {
+			// Checks this priority list to see if this token falls inside of it
+			if(array_has(_priority[j], _tokens[i].type)) {
+				var _tokens_before = [];
+				var _tokens_after = [];
+				array_copy(_tokens_before, 0, _tokens, 0, i);
+				array_copy(_tokens_after, 0, _tokens, i+1, array_length(_tokens)-i+1);
+				
+				
+				switch(_tokens[i].type) {
+					case TOKENTYPE.PARSED:
+						return new parse_node_parsed(_tokens[i].value);
+						break;
+					case TOKENTYPE.NUMBER:
+						return new parse_node_number(_tokens[i].value);
+						break;
+					case TOKENTYPE.VARIABLE:
+						return new parse_node_variable(_tokens[i].value);
+						break;
+					case TOKENTYPE.ADD:
+					case TOKENTYPE.SUBTRACT:
+					case TOKENTYPE.MULT:
+					case TOKENTYPE.DIVIDE:
+						return new parse_node_binary_operation(
+							parse(_tokens_before),
+							parse(_tokens_after),
+							_tokens[i].type
+						);
+						break;
+					case TOKENTYPE.ASSIGN:
+						return new parse_node_assignment(
+							parse(_tokens_before),
+							parse(_tokens_after)
+						);
+						break;
+					
+				}
+			}
+			else {
+				// Checks the tokens to see if it has anything that's inside this priority list
+				var _break_out = false;
+				for(var c = 0; c < array_length(_priority[j]); c++) {
+					if(array_has_struct(_tokens, "type", _priority[j][c])) {
+						_break_out = true;
+						break;
+					}
+				}
+				if(_break_out) break;
+			}
+		}
+	}
+}
+
+function find_pair_position(_tokens, _starting_pos, _opening_type, _closing_type) {
+	var _value = 0;
+	for(var i = _starting_pos; i < array_length(_tokens); i++) {
+		if(_tokens[i].type == _opening_type) _value++;
+		else if(_tokens[i].type == _closing_type) _value--;
+		
+		if(_value == 0) return i;
+	}
+	return -1;
+}
+
+
+function run() { // Runs the code
+	for(var i = 0; i < array_length(parsed_commands); i++) {
+		show_debug_message(parsed_commands[i].get_result());
+	}
+}
+
+function close() { // For closing the window
 	
 	
 }
