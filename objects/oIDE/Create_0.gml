@@ -2,6 +2,7 @@ text_editing = "";
 text_editing_last = text_editing;
 seperated_text = [];
 parsed_commands = [];
+included_functions = ds_list_create();
 
 surface = -1;
 left_margin = 30;
@@ -23,14 +24,16 @@ tokens = ds_list_create();
 enum TOKENTYPE {
 	PARSED,
 	VARIABLE,
-	ASSIGN,
 	NUMBER,
+	STRING,
+	COMMA,
+	FUNCTION,
+	ASSIGN,
 	SEMI_COLON,
 	ADD,
 	MULT,
 	SUBTRACT,
 	DIVIDE,
-	STRING,
 	OPEN_CURLY,
 	CLOSE_CURLY,
 	OPEN_PAREN,
@@ -85,7 +88,6 @@ function character(_code, _uppercase, _lowercase) constructor {
 	
 	if(_code == -1) keycode = ord(uppercase);
 	else keycode = _code;
-	show_debug_message(keycode);
 	
 	key_hold_timer = 0;
 	key_hold_subtract = 0;
@@ -158,13 +160,13 @@ for(var i = 0; i < array_length(valid_characters); i++) {
 #region nodes for the parser
 function parse_node_parsed(_value) constructor{
 	id = other.id;
-	value = _value;
+	parsed_value = _value;
 	
 	function get_result() {
-		return value.get_result();	
+		if(is_struct(parsed_value)) return parsed_value.get_result();	
 	}
 }
-function parse_node_number(_value) constructor{
+function parse_node_value(_value) constructor{
 	id = other.id;
 	value = _value;
 	
@@ -173,13 +175,29 @@ function parse_node_number(_value) constructor{
 	}
 }
 
-function parse_node_variable(_name) constructor{
+function parse_node_list(_list) constructor{
 	id = other.id;
-	is_variable = true;
-	name = _name;
+	list = [];
+	for(var i = 0; i < array_length(_list); i++) {
+		if(is_struct(_list[i])) { 
+			list = array_append(list, _list[i].get_result());
+		}
+	}
 	
 	function get_result() {
-		return variable_get(name);
+		return list;
+	}
+}
+
+function parse_node_variable(_name) constructor{
+	id = other.id;
+	variable_name = _name;
+	index = -1;
+	
+	function get_result() {
+		var _variable_value = variable_get(variable_name);
+		if(index == -1) return _variable_value;
+		else return _variable_value[index];
 	}
 }
 
@@ -194,6 +212,14 @@ function parse_node_binary_operation(_left, _right, _operation) constructor{
 		var _right_result = 0;
 		if(is_struct(left))  _left_result = left.get_result();	
 		if(is_struct(right)) _right_result = right.get_result();
+		
+		
+		if(is_string(_left_result) || is_string(_right_result)) {
+			if(operation == TOKENTYPE.ADD) {
+				_right_result = string(_right_result);
+				_left_result = string(_left_result);
+			}
+		}
 		
 		switch(operation) {
 			case TOKENTYPE.ADD: return _left_result + _right_result;
@@ -211,11 +237,19 @@ function parse_node_assignment(_left, _right) constructor{
 	
 	function get_result() {
 		var _right_result = 0;
-		if(is_struct(right)) _right_result = right.get_result();
+		if(is_struct(right)) {
+			_right_result = right.get_result();
+			if(is_undefined(_right_result) && variable_struct_exists(right, "parsed_value")) _right_result = [];	
+		}
 		
-		if(is_struct(left) && variable_struct_exists(left, "is_variable")) {
-			variable_set(left.name, _right_result);
-			return left.name + " = " + string(variable_get(left.name));
+		if(is_struct(left) && variable_struct_exists(left, "variable_name")) {
+			var _current_variable = variable_get(left.variable_name);
+			if(is_array(_current_variable) && left.index != -1) {
+				_current_variable[left.index] = _right_result;
+				variable_set(left.variable_name, _current_variable);
+			}
+			else variable_set(left.variable_name, _right_result);
+			return left.variable_name + " = " + string(variable_get(left.variable_name));
 		}
 	}
 }
@@ -241,10 +275,11 @@ function parse(_tokens) { // Parces an array of token
 		}
 	}
 	var _priority = [
+		[TOKENTYPE.COMMA],
 		[TOKENTYPE.ASSIGN],
 		[TOKENTYPE.ADD, TOKENTYPE.SUBTRACT],
 		[TOKENTYPE.MULT, TOKENTYPE.DIVIDE],
-		[TOKENTYPE.NUMBER, TOKENTYPE.VARIABLE, TOKENTYPE.PARSED]
+		[TOKENTYPE.NUMBER, TOKENTYPE.STRING, TOKENTYPE.VARIABLE, TOKENTYPE.PARSED]
 	]
 	for(var i = array_length(_tokens)-1; i >= 0; i--) {	
 		for(var j = 0; j < array_length(_priority); j++) {
@@ -255,13 +290,28 @@ function parse(_tokens) { // Parces an array of token
 				array_copy(_tokens_before, 0, _tokens, 0, i);
 				array_copy(_tokens_after, 0, _tokens, i+1, array_length(_tokens)-i+1);
 				
-				
 				switch(_tokens[i].type) {
 					case TOKENTYPE.PARSED:
-						return new parse_node_parsed(_tokens[i].value);
+						var _parse_node = new parse_node_parsed(_tokens[i].value);
+						var _result = _parse_node.get_result();
+						if(i-1 >= 0) {
+							var _next_token = _tokens[i-1];
+							switch(_next_token.type) {
+								case TOKENTYPE.VARIABLE:
+									var _variable_value = variable_get(_next_token.value);
+									if(is_array(_variable_value) && is_real(_result)) {
+										var _parsed_variable = parse([_next_token]);
+										_parsed_variable.index = round(_result);
+										return _parsed_variable;
+									}
+									break;
+							}
+						}
+						return _parse_node;
 						break;
+					case TOKENTYPE.STRING:
 					case TOKENTYPE.NUMBER:
-						return new parse_node_number(_tokens[i].value);
+						return new parse_node_value(_tokens[i].value);
 						break;
 					case TOKENTYPE.VARIABLE:
 						return new parse_node_variable(_tokens[i].value);
@@ -281,6 +331,20 @@ function parse(_tokens) { // Parces an array of token
 							parse(_tokens_before),
 							parse(_tokens_after)
 						);
+						break;
+					case TOKENTYPE.COMMA:
+						var _tokens_list = [parse(_tokens_after)];
+						var _list_item_tokens = [];
+						for(var c = array_length(_tokens_before) - 1; c >= -1; c--) {
+							if(c == -1 || _tokens_before[c].type == TOKENTYPE.COMMA) {
+								_tokens_list = array_insert(_tokens_list, 0, parse(_list_item_tokens));
+								_list_item_tokens = [];
+							}
+							else {
+								_list_item_tokens = array_insert(_list_item_tokens, 0, _tokens_before[c]);
+							}
+						}
+						return new parse_node_list(_tokens_list);
 						break;
 					
 				}

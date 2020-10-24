@@ -182,9 +182,25 @@ if(text_editing != text_editing_last) {
 				_peek_index--;
 				var _numb = string_copy(text_editing, i, _peek_index-i + 1);
 				i = _peek_index;
+				show_debug_message("Unrounded" + _numb);
+				show_debug_message("Rounded" + string(real(_numb)));
 				ds_list_add(tokens, new token(TOKENTYPE.NUMBER, real(_numb)));
 				break;
-			
+			case "\"":
+				var _peek_index = i;
+				var _found_string = false;
+				while(!_found_string) {
+					_peek_index++;
+					if(_peek_index == _text_len + 1) _found_string = true;
+					else {
+						var _peek_char = string_char_at(text_editing, _peek_index);	
+						if(_peek_char == "\"") _found_string = true;
+					}
+				}
+				var _str = string_copy(text_editing, i+1, _peek_index-i-1);
+				ds_list_add(tokens, new token(TOKENTYPE.STRING, _str));
+				i = _peek_index;
+				break;
 			case ";": // Semi Colon
 				ds_list_add(tokens, new token(TOKENTYPE.SEMI_COLON));
 			case "=": // Addition
@@ -214,7 +230,9 @@ if(text_editing != text_editing_last) {
 			case "}": // Closing curly brace
 				ds_list_add(tokens, new token(TOKENTYPE.CLOSE_CURLY));
 				break;
-			
+			case ",": // Comma
+				ds_list_add(tokens, new token(TOKENTYPE.COMMA));
+				break;
 		}
 	}
 	text_editing_last = text_editing;
