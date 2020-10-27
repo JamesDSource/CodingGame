@@ -47,7 +47,9 @@ enum TOKENTYPE {
 	OPEN_CURLY,
 	CLOSE_CURLY,
 	OPEN_PAREN,
-	CLOSE_PAREN
+	CLOSE_PAREN,
+	OPEN_BRACKET,
+	CLOSE_BRACKET
 }
 function token(_type, _value) constructor {
 	type = _type;
@@ -168,9 +170,10 @@ for(var i = 0; i < array_length(valid_characters); i++) {
 	}
 }
 #endregion
+
 #region Nodes for the parser
 function parse_node_parsed(_value) constructor{
-	id = other.id;
+	variables = other.variables;
 	parsed_value = _value;
 	
 	function get_result() {
@@ -178,7 +181,7 @@ function parse_node_parsed(_value) constructor{
 	}
 }
 function parse_node_value(_value) constructor{
-	id = other.id;
+	variables = other.variables;
 	value = _value;
 	
 	function get_result() {
@@ -187,57 +190,61 @@ function parse_node_value(_value) constructor{
 }
 
 function parse_node_function(_value, _arguments) constructor {
-	id = other.id;
+	variables = other.variables;
 	value = _value;
 	arguments = _arguments;
-	if(!is_array(arguments)) {
-		arguments = [arguments];
-	}
 	
 	function get_result() {
+		var _args = arguments.get_result();
+		show_debug_message("Arguments: " + string(arguments));
+		show_debug_message("ARGS: " + string(_args));
+		if(!is_array(_args)) {
+			_args = [_args];
+		}
 		switch(array_length(value.arguments)) {
-			case 1: return value.method_call(arguments[0]); break;
-			case 2: return value.method_call(arguments[0], arguments[1]); break;
-			case 3: return value.method_call(arguments[0], arguments[1], arguments[2]); break;
-			case 4: return value.method_call(arguments[0], arguments[1], arguments[2], arguments[3]); break;
-			case 5: return value.method_call(arguments[0], arguments[1], arguments[2], arguments[3], arguments[4]); break;
-			case 6: return value.method_call(arguments[0], arguments[1], arguments[2], arguments[3], arguments[4], arguments[5]); break;
-			case 7: return value.method_call(arguments[0], arguments[1], arguments[2], arguments[3], arguments[4], arguments[5], arguments[6]); break;
-			case 8: return value.method_call(arguments[0], arguments[1], arguments[2], arguments[3], arguments[4], arguments[5], arguments[6], arguments[7]); break;
-			case 9: return value.method_call(arguments[0], arguments[1], arguments[2], arguments[3], arguments[4], arguments[5], arguments[6], arguments[7], arguments[8]); break;
-			case 10: return value.method_call(arguments[0], arguments[1], arguments[2], arguments[3], arguments[4], arguments[5], arguments[6], arguments[7], arguments[8], arguments[9]); break;
+			case 1: return value.method_call(_args[0]); break;
+			case 2: return value.method_call(_args[0], _args[1]); break;
+			case 3: return value.method_call(_args[0], _args[1], _args[2]); break;
+			case 4: return value.method_call(_args[0], _args[1], _args[2], _args[3]); break;
+			case 5: return value.method_call(_args[0], _args[1], _args[2], _args[3], _args[4]); break;
+			case 6: return value.method_call(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5]); break;
+			case 7: return value.method_call(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6]); break;
+			case 8: return value.method_call(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7]); break;
+			case 9: return value.method_call(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8]); break;
+			case 10: return value.method_call(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9]); break;
 		}
 	}
 }
 
 function parse_node_list(_list) constructor{
-	id = other.id;
-	list = [];
-	for(var i = 0; i < array_length(_list); i++) {
-		if(is_struct(_list[i])) { 
-			list = array_append(list, _list[i].get_result());
-		}
-	}
+	variables = other.variables;
+	list = _list;
 	
 	function get_result() {
-		return list;
+		var _return_list = [];
+		for(var i = 0; i < array_length(list); i++) {
+			if(is_struct(list[i])) {
+				_return_list = array_append(_return_list, list[i].get_result());
+			}
+		}
+		return _return_list;
 	}
 }
 
 function parse_node_variable(_name) constructor{
-	id = other.id;
+	variables = other.variables;
 	variable_name = _name;
 	index = -1;
 	
 	function get_result() {
-		var _variable_value = variable_get(variable_name);
+		var _variable_value = variables[? variable_name];
 		if(index == -1) return _variable_value;
-		else return _variable_value[index];
+		else return _variable_value[parsed(index)];
 	}
 }
 
 function parse_node_binary_operation(_left, _right, _operation) constructor{
-	id = other.id;
+	variables = other.variables;
 	left = _left;
 	right = _right;
 	operation = _operation;
@@ -248,6 +255,8 @@ function parse_node_binary_operation(_left, _right, _operation) constructor{
 		if(is_struct(left))  _left_result = left.get_result();	
 		if(is_struct(right)) _right_result = right.get_result();
 		
+		if(!is_string(_left_result) && !is_real(_left_result)) _left_result = 0;
+		if(!is_string(_right_result) && !is_real(_right_result)) _right_result = 0;
 		
 		if(is_string(_left_result) || is_string(_right_result)) {
 			if(operation == TOKENTYPE.ADD) {
@@ -266,7 +275,7 @@ function parse_node_binary_operation(_left, _right, _operation) constructor{
 }
 
 function parse_node_assignment(_left, _right) constructor{
-	id = other.id;
+	variables = other.variables;
 	left = _left;
 	right = _right;
 	
@@ -278,31 +287,59 @@ function parse_node_assignment(_left, _right) constructor{
 		}
 		
 		if(is_struct(left) && variable_struct_exists(left, "variable_name")) {
-			var _current_variable = variable_get(left.variable_name);
+			var _current_variable = variables[? left.variable_name];
 			if(is_array(_current_variable) && left.index != -1) {
 				_current_variable[left.index] = _right_result;
-				variable_set(left.variable_name, _current_variable);
+				variables[? left.variable_name] = _current_variable;
 			}
-			else variable_set(left.variable_name, _right_result);
-			return left.variable_name + " = " + string(variable_get(left.variable_name));
+			else variables[? left.variable_name] = _right_result;
+			return left.variable_name + " = " + string(variables[? left.variable_name]);
 		}
 	}
 }
 #endregion
 #region Parser
-function parse(_tokens) { // Parces an array of token
+// Variables
+variables = ds_map_create();
+
+function parse(_tokens, _variables) { // Parces an array of token
 	// check for parenthesis
 	var _paren_error = false;
-	while(!_paren_error && array_has_struct(_tokens, "type", TOKENTYPE.OPEN_PAREN)) {
+	while(!_paren_error && (array_has_struct(_tokens, "type", TOKENTYPE.OPEN_PAREN) || array_has_struct(_tokens, "type", TOKENTYPE.OPEN_BRACKET))) {
 		for(var i = 0; i < array_length(_tokens); i++) {
-			if(_tokens[i].type == TOKENTYPE.OPEN_PAREN) {
-				var _pair_pos = find_pair_position(_tokens, i, TOKENTYPE.OPEN_PAREN, TOKENTYPE.CLOSE_PAREN);
+			if(_tokens[i].type == TOKENTYPE.OPEN_PAREN || _tokens[i].type == TOKENTYPE.OPEN_BRACKET) {
+				var _pair_pos = -1;
+				if(_tokens[i].type == TOKENTYPE.OPEN_PAREN) _pair_pos = find_pair_position(_tokens, i, TOKENTYPE.OPEN_PAREN, TOKENTYPE.CLOSE_PAREN);
+				else _pair_pos = find_pair_position(_tokens, i, TOKENTYPE.OPEN_BRACKET, TOKENTYPE.CLOSE_BRACKET);
+				
 				if(_pair_pos != -1) {
 					var _paren_tokens = [];
 					var _len = _pair_pos-i;
-					array_copy(_paren_tokens, 0, _tokens, i+1, _len-1);
-					repeat(_len) _tokens = array_delete(_tokens, i);
-					_paren_tokens = [new token(TOKENTYPE.PARSED, parse(_paren_tokens))];
+					if(_tokens[i].type == TOKENTYPE.OPEN_PAREN) {
+						array_copy(_paren_tokens, 0, _tokens, i+1, _len-1);
+						repeat(_len) _tokens = array_delete(_tokens, i);
+						_paren_tokens = [new token(TOKENTYPE.PARSED, parse(_paren_tokens, _variables))];
+					}
+					else {
+						var _bracket_list = [];
+						for(var j = i+1; j <= _pair_pos; j++) {
+							if(_tokens[j].type == TOKENTYPE.OPEN_BRACKET) {
+								var _pair = find_pair_position(_tokens, j, TOKENTYPE.OPEN_BRACKET, TOKENTYPE.CLOSE_BRACKET);
+								if(_pair != -1 || _pair < _pair_pos) {
+									for(var k = j; k <= _pair; k++) _paren_tokens = array_append(_paren_tokens, _tokens[k]);
+									j = _pair;
+								}
+							}
+							else if((_tokens[j].type == TOKENTYPE.COMMA || j == _pair_pos) && array_length(_paren_tokens) > 0) {
+								_paren_tokens = parse(_paren_tokens, _variables);
+								_bracket_list = array_append(_bracket_list, _paren_tokens);
+								_paren_tokens = [];
+							}
+							else _paren_tokens = array_append(_paren_tokens, _tokens[j]);
+						}
+						repeat(_len) _tokens = array_delete(_tokens, i);
+						_paren_tokens = [new token(TOKENTYPE.PARSED, new parse_node_list(_bracket_list))];
+					}
 					array_copy(_tokens, i, _paren_tokens, 0, 1);
 				}
 				else _paren_error = true;
@@ -328,20 +365,19 @@ function parse(_tokens) { // Parces an array of token
 				switch(_tokens[i].type) {
 					case TOKENTYPE.PARSED:
 						var _parse_node = new parse_node_parsed(_tokens[i].value);
-						var _result = _parse_node.get_result();
 						if(i-1 >= 0) {
 							var _next_token = _tokens[i-1];
 							switch(_next_token.type) {
 								case TOKENTYPE.VARIABLE:
-									var _variable_value = variable_get(_next_token.value);
-									if(is_array(_variable_value) && is_real(_result)) {
-										var _parsed_variable = parse([_next_token]);
-										_parsed_variable.index = round(_result);
+									var _variable_value = _variables[? _next_token.value];
+									if(is_array(_variable_value) && is_real(_parse_node)) {
+										var _parsed_variable = parse([_next_token], _variables);
+										_parsed_variable.index = round(_parse_node);
 										return _parsed_variable;
 									}
 									break;
 								case TOKENTYPE.FUNCTION:
-									return new parse_node_function(_tokens[i-1].value, _result);
+									return new parse_node_function(_tokens[i-1].value, _parse_node);
 									break;
 							}
 						}
@@ -362,30 +398,16 @@ function parse(_tokens) { // Parces an array of token
 					case TOKENTYPE.MULT:
 					case TOKENTYPE.DIVIDE:
 						return new parse_node_binary_operation(
-							parse(_tokens_before),
-							parse(_tokens_after),
+							parse(_tokens_before, _variables),
+							parse(_tokens_after, _variables),
 							_tokens[i].type
 						);
 						break;
 					case TOKENTYPE.ASSIGN:
 						return new parse_node_assignment(
-							parse(_tokens_before),
-							parse(_tokens_after)
+							parse(_tokens_before, _variables),
+							parse(_tokens_after, _variables)
 						);
-						break;
-					case TOKENTYPE.COMMA:
-						var _tokens_list = [parse(_tokens_after)];
-						var _list_item_tokens = [];
-						for(var c = array_length(_tokens_before) - 1; c >= -1; c--) {
-							if(c == -1 || _tokens_before[c].type == TOKENTYPE.COMMA) {
-								_tokens_list = array_insert(_tokens_list, 0, parse(_list_item_tokens));
-								_list_item_tokens = [];
-							}
-							else {
-								_list_item_tokens = array_insert(_list_item_tokens, 0, _tokens_before[c]);
-							}
-						}
-						return new parse_node_list(_tokens_list);
 						break;
 					
 				}
@@ -421,6 +443,7 @@ function run() { // Runs the code
 	for(var i = 0; i < array_length(parsed_commands); i++) {
 		parsed_commands[i].get_result();
 	}
+	ds_map_clear(variables);
 }
 
 function close() { // For closing the window

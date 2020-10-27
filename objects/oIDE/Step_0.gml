@@ -242,6 +242,12 @@ if(text_editing != text_editing_last) {
 				break;
 			case "}": // Closing curly brace
 				ds_list_add(tokens, new token(TOKENTYPE.CLOSE_CURLY));
+				break;			
+			case "[": // Opening curly brace
+				ds_list_add(tokens, new token(TOKENTYPE.OPEN_BRACKET));
+				break;
+			case "]": // Closing curly brace
+				ds_list_add(tokens, new token(TOKENTYPE.CLOSE_BRACKET));
 				break;
 			case ",": // Comma
 				ds_list_add(tokens, new token(TOKENTYPE.COMMA));
@@ -260,7 +266,7 @@ if(text_editing != text_editing_last) {
 	for(var i = 0; i < ds_list_size(tokens); i++) {
 		if(tokens[| i].type != TOKENTYPE.SEMI_COLON) _command_tokens = array_append(_command_tokens, tokens[| i]);
 		else {
-			parsed_commands = array_append(parsed_commands, parse(_command_tokens));
+			parsed_commands = array_append(parsed_commands, parse(_command_tokens, variables));
 			_command_tokens = [];
 			i++;
 		}
