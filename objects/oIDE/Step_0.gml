@@ -152,7 +152,20 @@ if(text_editing != text_editing_last) {
 				_peek_index--;
 				var _symbol = string_copy(text_editing, i, _peek_index-i + 1);
 				i = _peek_index;
-				ds_list_add(tokens, new token(TOKENTYPE.VARIABLE, _symbol));
+				
+				// Looking to see if symbol is a function
+				var _function_data = -1;
+				for(var j = 0; j < ds_list_size(included_functions); j++) {
+					for(var k = 0; k < array_length(included_functions[| j].methods); k++) {
+						if(included_functions[| j].methods[k].name == _symbol) {
+							_function_data = included_functions[| j].methods[k];
+							break;
+						}
+					}
+				}
+				
+				if(_function_data != -1) ds_list_add(tokens, new token(TOKENTYPE.FUNCTION, _function_data));
+				else ds_list_add(tokens, new token(TOKENTYPE.VARIABLE, _symbol));
 				break;
 			case "0": // Numbers
 			case "1":

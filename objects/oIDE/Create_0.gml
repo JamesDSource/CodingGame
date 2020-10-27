@@ -1,8 +1,17 @@
+window_width = 400;
+window_height = 400;
+window_name = "Code IDE"
+
+t = 0;
+
 text_editing = "";
 text_editing_last = text_editing;
 seperated_text = [];
 parsed_commands = [];
+
+// functions
 included_functions = ds_list_create();
+ds_list_add(included_functions, global.standard_library);
 
 surface = -1;
 left_margin = 30;
@@ -20,6 +29,7 @@ dragging = -1;
 horizontal_resize = false;
 verticle_resize = false;
 
+#region tokens
 tokens = ds_list_create();
 enum TOKENTYPE {
 	PARSED,
@@ -44,7 +54,8 @@ function token(_type, _value) constructor {
 	if(!is_undefined(_value)) value = _value;
 	else value = -1;
 }
-
+#endregion
+#region cursor
 function move_cursor(horizontal, verticle) {
 	// Horizontal
 	cursor_offset += horizontal;
@@ -75,8 +86,8 @@ function move_cursor(horizontal, verticle) {
 	//show_debug_message("Offset: " + string(cursor_offset) + " | Line" + string(cursor_line) + " | Offset on line: " + string(cursor_offset_on_line));
 }
 move_cursor(0, 0);
-t = 0;
-
+#endregion
+#region Key characters
 key_hold_time = 40;
 key_hold_acceleration = 2;
 function character(_code, _uppercase, _lowercase) constructor {
@@ -156,8 +167,8 @@ for(var i = 0; i < array_length(valid_characters); i++) {
 		valid_characters[i] = ord(valid_characters[i]);
 	}
 }
-
-#region nodes for the parser
+#endregion
+#region Nodes for the parser
 function parse_node_parsed(_value) constructor{
 	id = other.id;
 	parsed_value = _value;
@@ -172,6 +183,30 @@ function parse_node_value(_value) constructor{
 	
 	function get_result() {
 		return value;	
+	}
+}
+
+function parse_node_function(_value, _arguments) constructor {
+	id = other.id;
+	value = _value;
+	arguments = _arguments;
+	if(!is_array(arguments)) {
+		arguments = [arguments];
+	}
+	
+	function get_result() {
+		switch(array_length(value.arguments)) {
+			case 1: return value.method_call(arguments[0]); break;
+			case 2: return value.method_call(arguments[0], arguments[1]); break;
+			case 3: return value.method_call(arguments[0], arguments[1], arguments[2]); break;
+			case 4: return value.method_call(arguments[0], arguments[1], arguments[2], arguments[3]); break;
+			case 5: return value.method_call(arguments[0], arguments[1], arguments[2], arguments[3], arguments[4]); break;
+			case 6: return value.method_call(arguments[0], arguments[1], arguments[2], arguments[3], arguments[4], arguments[5]); break;
+			case 7: return value.method_call(arguments[0], arguments[1], arguments[2], arguments[3], arguments[4], arguments[5], arguments[6]); break;
+			case 8: return value.method_call(arguments[0], arguments[1], arguments[2], arguments[3], arguments[4], arguments[5], arguments[6], arguments[7]); break;
+			case 9: return value.method_call(arguments[0], arguments[1], arguments[2], arguments[3], arguments[4], arguments[5], arguments[6], arguments[7], arguments[8]); break;
+			case 10: return value.method_call(arguments[0], arguments[1], arguments[2], arguments[3], arguments[4], arguments[5], arguments[6], arguments[7], arguments[8], arguments[9]); break;
+		}
 	}
 }
 
@@ -254,7 +289,7 @@ function parse_node_assignment(_left, _right) constructor{
 	}
 }
 #endregion
-
+#region Parser
 function parse(_tokens) { // Parces an array of token
 	// check for parenthesis
 	var _paren_error = false;
@@ -279,7 +314,7 @@ function parse(_tokens) { // Parces an array of token
 		[TOKENTYPE.ASSIGN],
 		[TOKENTYPE.ADD, TOKENTYPE.SUBTRACT],
 		[TOKENTYPE.MULT, TOKENTYPE.DIVIDE],
-		[TOKENTYPE.NUMBER, TOKENTYPE.STRING, TOKENTYPE.VARIABLE, TOKENTYPE.PARSED]
+		[TOKENTYPE.NUMBER, TOKENTYPE.STRING, TOKENTYPE.VARIABLE, TOKENTYPE.PARSED, TOKENTYPE.FUNCTION]
 	]
 	for(var i = array_length(_tokens)-1; i >= 0; i--) {	
 		for(var j = 0; j < array_length(_priority); j++) {
@@ -305,6 +340,9 @@ function parse(_tokens) { // Parces an array of token
 										return _parsed_variable;
 									}
 									break;
+								case TOKENTYPE.FUNCTION:
+									return new parse_node_function(_tokens[i-1].value, _result);
+									break;
 							}
 						}
 						return _parse_node;
@@ -315,6 +353,9 @@ function parse(_tokens) { // Parces an array of token
 						break;
 					case TOKENTYPE.VARIABLE:
 						return new parse_node_variable(_tokens[i].value);
+						break;
+					case TOKENTYPE.FUNCTION:
+						return new parse_node_function(_tokens[i].value);
 						break;
 					case TOKENTYPE.ADD:
 					case TOKENTYPE.SUBTRACT:
@@ -374,11 +415,11 @@ function find_pair_position(_tokens, _starting_pos, _opening_type, _closing_type
 	}
 	return -1;
 }
-
+#endregion
 
 function run() { // Runs the code
 	for(var i = 0; i < array_length(parsed_commands); i++) {
-		show_debug_message(parsed_commands[i].get_result());
+		parsed_commands[i].get_result();
 	}
 }
 

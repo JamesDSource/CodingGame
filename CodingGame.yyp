@@ -1,6 +1,7 @@
 {
   "resources": [
     {"id":{"name":"scrArray","path":"scripts/scrArray/scrArray.yy",},"order":15,},
+    {"id":{"name":"scrLibrary","path":"scripts/scrLibrary/scrLibrary.yy",},"order":17,},
     {"id":{"name":"oIDE","path":"objects/oIDE/oIDE.yy",},"order":13,},
     {"id":{"name":"scrString","path":"scripts/scrString/scrString.yy",},"order":14,},
     {"id":{"name":"scrVariable_memory","path":"scripts/scrVariable_memory/scrVariable_memory.yy",},"order":16,},
