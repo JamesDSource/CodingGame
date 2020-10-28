@@ -156,6 +156,9 @@ if(text_editing != text_editing_last) {
 				var _found_keyword = true;
 				switch(_symbol) {
 					case "if": ds_list_add(tokens, new token(TOKENTYPE.IF)); break;
+					case "elif": ds_list_add(tokens, new token(TOKENTYPE.ELIF)); break;
+					case "else": ds_list_add(tokens, new token(TOKENTYPE.ELSE)); break;
+					case "loop": ds_list_add(tokens, new token(TOKENTYPE.LOOP)); break;
 					case "true": ds_list_add(tokens, new token(TOKENTYPE.BOOL, true)); break;
 					case "false": ds_list_add(tokens, new token(TOKENTYPE.BOOL, false)); break;
 					default: _found_keyword = false; break;

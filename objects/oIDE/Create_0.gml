@@ -57,6 +57,9 @@ enum TOKENTYPE {
 	OPEN_BRACKET,
 	CLOSE_BRACKET,
 	IF,
+	ELIF,
+	ELSE,
+	LOOP
 }
 function token(_type, _value) constructor {
 	type = _type;
@@ -180,6 +183,7 @@ for(var i = 0; i < array_length(valid_characters); i++) {
 
 #region Nodes for the parser
 function parse_node_parsed(_value) constructor {
+	node_name = "parsed";
 	variables = other.variables;
 	parsed_value = _value;
 	
@@ -188,6 +192,7 @@ function parse_node_parsed(_value) constructor {
 	}
 }
 function parse_node_value(_value) constructor {
+	node_name = "value";
 	variables = other.variables;
 	value = _value;
 	
@@ -197,6 +202,7 @@ function parse_node_value(_value) constructor {
 }
 
 function parse_node_function(_value, _arguments) constructor {
+	node_name = "function";
 	variables = other.variables;
 	value = _value;
 	arguments = _arguments;
@@ -222,6 +228,7 @@ function parse_node_function(_value, _arguments) constructor {
 }
 
 function parse_node_list(_list) constructor {
+	node_name = "list";
 	variables = other.variables;
 	list = _list;
 	
@@ -237,6 +244,7 @@ function parse_node_list(_list) constructor {
 }
 
 function parse_node_variable(_name) constructor {
+	node_name = "variable";
 	variables = other.variables;
 	variable_name = _name;
 	index = -1;
@@ -249,6 +257,7 @@ function parse_node_variable(_name) constructor {
 }
 
 function parse_node_binary_operation(_left, _right, _operation) constructor {
+	node_name = "binary operation";
 	variables = other.variables;
 	left = _left;
 	right = _right;
@@ -280,6 +289,7 @@ function parse_node_binary_operation(_left, _right, _operation) constructor {
 }
 
 function parse_node_comparison_operation(_left, _right, _operation) constructor {
+	node_name = "comparison operation";
 	variables = other.variables;
 	left = _left;
 	right = _right;
@@ -302,6 +312,7 @@ function parse_node_comparison_operation(_left, _right, _operation) constructor 
 }
 
 function parse_node_assignment(_left, _right) constructor {
+	node_name = "assignment";
 	variables = other.variables;
 	left = _left;
 	right = _right;
@@ -326,6 +337,7 @@ function parse_node_assignment(_left, _right) constructor {
 }
 
 function parse_node_if(_boolean) constructor {
+	node_name = "if";
 	variables = other.variables;
 	if_boolean = _boolean;
 	function get_result() {
@@ -333,9 +345,29 @@ function parse_node_if(_boolean) constructor {
 	}
 }
 
-function parse_node_close_curly() constructor {
+function parse_node_else() constructor {
+	node_name = "else";
 	variables = other.variables;
-	is_close_curly = true;
+	function get_result() {
+		return undefined;
+	}
+}
+
+function parse_node_loop(_count) constructor {
+	node_name = "loop";
+	variables = other.variables;
+	count = _count;
+	function get_result() {
+		var _loop_count = count.get_result();
+		if(is_real(_loop_count)) {
+			return round(_loop_count);
+		}
+	}
+}
+
+function parse_node_close_curly() constructor {
+	node_name = "close curly";
+	variables = other.variables;
 	function get_result() {
 		return undefined;
 	}
@@ -391,7 +423,7 @@ function parse(_tokens, _variables) { // Parces an array of token
 	}
 	var _priority = [
 		[TOKENTYPE.CLOSE_CURLY],
-		[TOKENTYPE.ASSIGN, TOKENTYPE.IF],
+		[TOKENTYPE.ASSIGN, TOKENTYPE.IF, TOKENTYPE.ELIF, TOKENTYPE.ELSE, TOKENTYPE.LOOP],
 		[TOKENTYPE.EQUALS, TOKENTYPE.GREATER, TOKENTYPE.LESSER, TOKENTYPE.GREATEREQUAL, TOKENTYPE.LESSEREQUAL],
 		[TOKENTYPE.ADD, TOKENTYPE.SUBTRACT],
 		[TOKENTYPE.MULT, TOKENTYPE.DIVIDE],
@@ -465,9 +497,20 @@ function parse(_tokens, _variables) { // Parces an array of token
 							parse(_tokens_after, _variables)
 						);
 						break;
+					case TOKENTYPE.ELIF:
 					case TOKENTYPE.IF:
 						if(i < array_length(_tokens)-1 && _tokens[i+1].type == TOKENTYPE.PARSED) {
-							return new parse_node_if(parse([_tokens[i+1]]));
+							var _new_node = new parse_node_if(parse([_tokens[i+1]]));
+							if(_tokens[i].type == TOKENTYPE.ELIF) _new_node.node_name = "elif";
+							return _new_node;
+						}
+						break;
+					case TOKENTYPE.ELSE:
+						return new parse_node_else();
+						break;
+					case TOKENTYPE.LOOP:
+						if(i < array_length(_tokens)-1 && _tokens[i+1].type == TOKENTYPE.PARSED) {
+							return new parse_node_loop(parse([_tokens[i+1]]));
 						}
 						break;
 					case TOKENTYPE.CLOSE_CURLY:
@@ -503,26 +546,62 @@ function find_pair_position(_tokens, _starting_pos, _opening_type, _closing_type
 #endregion
 
 function run() { // Runs the code
+	function check_for_pair(_start_pos) {
+		var _value = 0;
+		for(var i = _start_pos; i < array_length(parsed_commands); i++) {
+			switch(parsed_commands[i].node_name) {
+				case "if":
+				case "elif":
+				case "else":
+					_value++;
+					break;
+				case "close curly":
+					_value--;
+			}
+			
+			if(_value == 0) return i;
+		}
+		// TODO: put an error here for not finding a pair
+		return -1;
+	}
+
 	// loops through each command
 	var _parse_len = array_length(parsed_commands);
 	for(var i = 0; i < _parse_len; i++) {
 		var _current_command = parsed_commands[i];
 		var _current_command_result = _current_command.get_result();
-		//show_debug_message(_current_command_result);
 		
-		// if statements
-		if(variable_struct_exists(_current_command, "if_boolean") && !_current_command_result) { // if this is an if and it returns false
-			var _value = 0;
-			for(var j = i; j < _parse_len; j++) {
-				var if_check_command = parsed_commands[j];
-				if(variable_struct_exists(if_check_command, "if_boolean")) _value++;
-				else if(variable_struct_exists(if_check_command, "is_close_curly")) _value--;
-				
-				if(_value == 0) {
-					i = j;
-					break;
+		switch(_current_command.node_name) {
+			case "if":
+				if(!_current_command_result) {
+					i = check_for_pair(i);
+					// finding a drop off point
+					var _found_drop_off = false;
+					while(!_found_drop_off) {
+						if(i + 1 >= _parse_len) _found_drop_off = true;
+						else {
+							switch(parsed_commands[i+1].node_name) {
+								case "elif":
+									if(parsed_commands[i+1].get_result()) {
+										i++;
+										_found_drop_off = true;
+									}
+									else i = check_for_pair(i+1);
+									break;
+								case "else":
+									i++;
+								default:
+									_found_drop_off = true;
+									break;
+							}
+						}
+					}
 				}
-			}
+				break;
+			case "elif":
+			case "else":
+				i = check_for_pair(i);
+				break;
 		}
 	
 		
