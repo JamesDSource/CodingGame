@@ -295,8 +295,9 @@ if(text_editing != text_editing_last) {
 	parsed_commands = [];
 	for(var i = 0; i < ds_list_size(tokens); i++) {
 		switch(tokens[| i].type) {
-			case TOKENTYPE.OPEN_CURLY:
 			case TOKENTYPE.SEMI_COLON:
+				i++;
+			case TOKENTYPE.OPEN_CURLY:
 				parsed_commands = array_append(parsed_commands, parse(_command_tokens, variables));
 				_command_tokens = [];
 				break;

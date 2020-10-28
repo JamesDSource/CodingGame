@@ -209,9 +209,6 @@ function parse_node_function(_value, _arguments) constructor {
 	
 	function get_result() {
 		var _args = arguments.get_result();
-		if(!is_array(_args)) {
-			_args = [_args];
-		}
 		switch(array_length(value.arguments)) {
 			case 1: return value.method_call(_args[0]); break;
 			case 2: return value.method_call(_args[0], _args[1]); break;
@@ -252,7 +249,7 @@ function parse_node_variable(_name) constructor {
 	function get_result() {
 		var _variable_value = variables[? variable_name];
 		if(index == -1) return _variable_value;
-		else return _variable_value[parsed(index)];
+		else return _variable_value[index.get_result()];
 	}
 }
 
@@ -318,13 +315,10 @@ function parse_node_assignment(_left, _right) constructor {
 	right = _right;
 	
 	function get_result() {
-		var _right_result = 0;
-		if(is_struct(right)) {
-			_right_result = right.get_result();
-			if(is_undefined(_right_result) && variable_struct_exists(right, "parsed_value")) _right_result = [];	
-		}
+		var _right_result = undefined;
+		if(is_struct(right)) _right_result = right.get_result();
 		
-		if(is_struct(left) && variable_struct_exists(left, "variable_name")) {
+		if(is_struct(left) && left.node_name == "variable") {
 			var _current_variable = variables[? left.variable_name];
 			if(is_array(_current_variable) && left.index != -1) {
 				_current_variable[left.index] = _right_result;
@@ -448,7 +442,7 @@ function parse(_tokens, _variables) { // Parces an array of token
 									var _variable_value = _variables[? _next_token.value];
 									if(is_array(_variable_value) && is_real(_parse_node)) {
 										var _parsed_variable = parse([_next_token], _variables);
-										_parsed_variable.index = round(_parse_node);
+										_parsed_variable.index = _parse_node;
 										return _parsed_variable;
 									}
 									break;
@@ -546,6 +540,8 @@ function find_pair_position(_tokens, _starting_pos, _opening_type, _closing_type
 #endregion
 
 function run() { // Runs the code
+	var _loop_points = ds_list_create();
+
 	function check_for_pair(_start_pos) {
 		var _value = 0;
 		for(var i = _start_pos; i < array_length(parsed_commands); i++) {
@@ -553,6 +549,7 @@ function run() { // Runs the code
 				case "if":
 				case "elif":
 				case "else":
+				case "loop":
 					_value++;
 					break;
 				case "close curly":
@@ -602,12 +599,31 @@ function run() { // Runs the code
 			case "else":
 				i = check_for_pair(i);
 				break;
+			case "loop":
+				var _end_loop_point = check_for_pair(i);
+				var _loop_point = {start_point: i, end_point: _end_loop_point, iterations_remaining: _current_command_result}; 
+				ds_list_add(_loop_points, _loop_point);
+				show_debug_message(_loop_point);
+				break;
+			case "close curly":
+				// Checking for loops
+				for(var j = 0; j < ds_list_size(_loop_points); j++) {
+					if(_loop_points[| j].end_point == i) {
+						_loop_points[| j].iterations_remaining--;
+						if(_loop_points[| j].iterations_remaining > 0) {
+							i = _loop_points[| j].start_point;	
+						}
+						break;
+					}
+				}
+				break;
 		}
 	
 		
 	}
 	// clears variables
 	ds_map_clear(variables);
+	ds_list_destroy(_loop_points);
 }
 
 function close() { // For closing the window
