@@ -247,9 +247,13 @@ function parse_node_variable(_name) constructor {
 	index = -1;
 	
 	function get_result() {
+		var _index = -1;
+		if(index != -1) _index = index.get_result();
+		
 		var _variable_value = variables[? variable_name];
-		if(index == -1) return _variable_value;
-		else return _variable_value[index.get_result()];
+		if(_index == -1 || !is_array(_variable_value)) return _variable_value;
+		else if(is_array(_index)) return _variable_value[_index[0]];
+		else return _variable_value[_index];
 	}
 }
 
@@ -440,11 +444,9 @@ function parse(_tokens, _variables) { // Parces an array of token
 							switch(_next_token.type) {
 								case TOKENTYPE.VARIABLE:
 									var _variable_value = _variables[? _next_token.value];
-									if(is_array(_variable_value) && is_real(_parse_node)) {
-										var _parsed_variable = parse([_next_token], _variables);
-										_parsed_variable.index = _parse_node;
-										return _parsed_variable;
-									}
+									var _parsed_variable = parse([_next_token], _variables);
+									_parsed_variable.index = _parse_node;
+									return _parsed_variable;
 									break;
 								case TOKENTYPE.FUNCTION:
 									return new parse_node_function(_tokens[i-1].value, _parse_node);
