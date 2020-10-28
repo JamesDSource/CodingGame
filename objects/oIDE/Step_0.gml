@@ -153,6 +153,15 @@ if(text_editing != text_editing_last) {
 				var _symbol = string_copy(text_editing, i, _peek_index-i + 1);
 				i = _peek_index;
 				
+				var _found_keyword = true;
+				switch(_symbol) {
+					case "if": ds_list_add(tokens, new token(TOKENTYPE.IF)); break;
+					case "true": ds_list_add(tokens, new token(TOKENTYPE.BOOL, true)); break;
+					case "false": ds_list_add(tokens, new token(TOKENTYPE.BOOL, false)); break;
+					default: _found_keyword = false; break;
+				}
+				if(_found_keyword) break;
+				
 				// Looking to see if symbol is a function
 				var _function_data = -1;
 				for(var j = 0; j < ds_list_size(included_functions); j++) {
@@ -216,8 +225,26 @@ if(text_editing != text_editing_last) {
 				break;
 			case ";": // Semi Colon
 				ds_list_add(tokens, new token(TOKENTYPE.SEMI_COLON));
-			case "=": // Addition
-				ds_list_add(tokens, new token(TOKENTYPE.ASSIGN));
+			case "=": // Addition and equals
+				if(i + 1 <= _text_len && string_char_at(text_editing, i + 1) == "=") {
+					ds_list_add(tokens, new token(TOKENTYPE.EQUALS));
+					i++;	
+				}
+				else ds_list_add(tokens, new token(TOKENTYPE.ASSIGN));
+				break;
+			case ">":
+				if(i + 1 <= _text_len && string_char_at(text_editing, i + 1) == "=") {
+					ds_list_add(tokens, new token(TOKENTYPE.GREATEREQUAL));
+					i++;	
+				}
+				else ds_list_add(tokens, new token(TOKENTYPE.GREATER));
+				break;
+			case "<":
+				if(i + 1 <= _text_len && string_char_at(text_editing, i + 1) == "=") {
+					ds_list_add(tokens, new token(TOKENTYPE.LESSEREQUAL));
+					i++;	
+				}
+				else ds_list_add(tokens, new token(TOKENTYPE.LESSER));
 				break;
 			case "+": // Addition
 				ds_list_add(tokens, new token(TOKENTYPE.ADD));
@@ -264,11 +291,16 @@ if(text_editing != text_editing_last) {
 	var _command_tokens = [];
 	parsed_commands = [];
 	for(var i = 0; i < ds_list_size(tokens); i++) {
-		if(tokens[| i].type != TOKENTYPE.SEMI_COLON) _command_tokens = array_append(_command_tokens, tokens[| i]);
-		else {
-			parsed_commands = array_append(parsed_commands, parse(_command_tokens, variables));
-			_command_tokens = [];
-			i++;
+		switch(tokens[| i].type) {
+			case TOKENTYPE.OPEN_CURLY:
+			case TOKENTYPE.SEMI_COLON:
+				parsed_commands = array_append(parsed_commands, parse(_command_tokens, variables));
+				_command_tokens = [];
+				break;
+			case TOKENTYPE.CLOSE_CURLY:
+				parsed_commands = array_append(parsed_commands, parse([tokens[| i]], variables));
+				break;
+			default: _command_tokens = array_append(_command_tokens, tokens[| i]); break;
 		}
 	}
 }

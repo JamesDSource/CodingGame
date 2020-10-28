@@ -1,11 +1,9 @@
 {
   "resources": [
     {"id":{"name":"scrArray","path":"scripts/scrArray/scrArray.yy",},"order":15,},
-    {"id":{"name":"scrLibrary","path":"scripts/scrLibrary/scrLibrary.yy",},"order":17,},
+    {"id":{"name":"scrLibrary","path":"scripts/scrLibrary/scrLibrary.yy",},"order":16,},
     {"id":{"name":"oIDE","path":"objects/oIDE/oIDE.yy",},"order":13,},
     {"id":{"name":"scrString","path":"scripts/scrString/scrString.yy",},"order":14,},
-    {"id":{"name":"scrParsing","path":"scripts/scrParsing/scrParsing.yy",},"order":18,},
-    {"id":{"name":"scrVariable_memory","path":"scripts/scrVariable_memory/scrVariable_memory.yy",},"order":16,},
     {"id":{"name":"Room1","path":"rooms/Room1/Room1.yy",},"order":0,},
   ],
   "Options": [

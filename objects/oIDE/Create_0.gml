@@ -36,6 +36,7 @@ enum TOKENTYPE {
 	VARIABLE,
 	NUMBER,
 	STRING,
+	BOOL,
 	COMMA,
 	FUNCTION,
 	ASSIGN,
@@ -44,12 +45,18 @@ enum TOKENTYPE {
 	MULT,
 	SUBTRACT,
 	DIVIDE,
+	EQUALS,
+	GREATER,
+	GREATEREQUAL,
+	LESSER,
+	LESSEREQUAL,
 	OPEN_CURLY,
 	CLOSE_CURLY,
 	OPEN_PAREN,
 	CLOSE_PAREN,
 	OPEN_BRACKET,
-	CLOSE_BRACKET
+	CLOSE_BRACKET,
+	IF,
 }
 function token(_type, _value) constructor {
 	type = _type;
@@ -172,7 +179,7 @@ for(var i = 0; i < array_length(valid_characters); i++) {
 #endregion
 
 #region Nodes for the parser
-function parse_node_parsed(_value) constructor{
+function parse_node_parsed(_value) constructor {
 	variables = other.variables;
 	parsed_value = _value;
 	
@@ -180,7 +187,7 @@ function parse_node_parsed(_value) constructor{
 		if(is_struct(parsed_value)) return parsed_value.get_result();	
 	}
 }
-function parse_node_value(_value) constructor{
+function parse_node_value(_value) constructor {
 	variables = other.variables;
 	value = _value;
 	
@@ -196,8 +203,6 @@ function parse_node_function(_value, _arguments) constructor {
 	
 	function get_result() {
 		var _args = arguments.get_result();
-		show_debug_message("Arguments: " + string(arguments));
-		show_debug_message("ARGS: " + string(_args));
 		if(!is_array(_args)) {
 			_args = [_args];
 		}
@@ -216,7 +221,7 @@ function parse_node_function(_value, _arguments) constructor {
 	}
 }
 
-function parse_node_list(_list) constructor{
+function parse_node_list(_list) constructor {
 	variables = other.variables;
 	list = _list;
 	
@@ -231,7 +236,7 @@ function parse_node_list(_list) constructor{
 	}
 }
 
-function parse_node_variable(_name) constructor{
+function parse_node_variable(_name) constructor {
 	variables = other.variables;
 	variable_name = _name;
 	index = -1;
@@ -243,7 +248,7 @@ function parse_node_variable(_name) constructor{
 	}
 }
 
-function parse_node_binary_operation(_left, _right, _operation) constructor{
+function parse_node_binary_operation(_left, _right, _operation) constructor {
 	variables = other.variables;
 	left = _left;
 	right = _right;
@@ -274,7 +279,29 @@ function parse_node_binary_operation(_left, _right, _operation) constructor{
 	}
 }
 
-function parse_node_assignment(_left, _right) constructor{
+function parse_node_comparison_operation(_left, _right, _operation) constructor {
+	variables = other.variables;
+	left = _left;
+	right = _right;
+	operation = _operation;
+	
+	function get_result() {
+		var _left_result = 0;
+		var _right_result = 0;
+		if(is_struct(left))  _left_result = left.get_result();	
+		if(is_struct(right)) _right_result = right.get_result();
+		
+		switch(operation) {
+			case TOKENTYPE.EQUALS: return _left_result == _right_result;
+			case TOKENTYPE.GREATER: return _left_result > _right_result;
+			case TOKENTYPE.GREATEREQUAL: return _left_result >= _right_result;
+			case TOKENTYPE.LESSER: return _left_result < _right_result;
+			case TOKENTYPE.LESSEREQUAL: return _left_result <= _right_result;
+		}
+	}
+}
+
+function parse_node_assignment(_left, _right) constructor {
 	variables = other.variables;
 	left = _left;
 	right = _right;
@@ -295,6 +322,22 @@ function parse_node_assignment(_left, _right) constructor{
 			else variables[? left.variable_name] = _right_result;
 			return left.variable_name + " = " + string(variables[? left.variable_name]);
 		}
+	}
+}
+
+function parse_node_if(_boolean) constructor {
+	variables = other.variables;
+	if_boolean = _boolean;
+	function get_result() {
+		return if_boolean.get_result() > 0;
+	}
+}
+
+function parse_node_close_curly() constructor {
+	variables = other.variables;
+	is_close_curly = true;
+	function get_result() {
+		return undefined;
 	}
 }
 #endregion
@@ -347,11 +390,12 @@ function parse(_tokens, _variables) { // Parces an array of token
 		}
 	}
 	var _priority = [
-		[TOKENTYPE.COMMA],
-		[TOKENTYPE.ASSIGN],
+		[TOKENTYPE.CLOSE_CURLY],
+		[TOKENTYPE.ASSIGN, TOKENTYPE.IF],
+		[TOKENTYPE.EQUALS, TOKENTYPE.GREATER, TOKENTYPE.LESSER, TOKENTYPE.GREATEREQUAL, TOKENTYPE.LESSEREQUAL],
 		[TOKENTYPE.ADD, TOKENTYPE.SUBTRACT],
 		[TOKENTYPE.MULT, TOKENTYPE.DIVIDE],
-		[TOKENTYPE.NUMBER, TOKENTYPE.STRING, TOKENTYPE.VARIABLE, TOKENTYPE.PARSED, TOKENTYPE.FUNCTION]
+		[TOKENTYPE.NUMBER, TOKENTYPE.STRING, TOKENTYPE.BOOL, TOKENTYPE.VARIABLE, TOKENTYPE.PARSED, TOKENTYPE.FUNCTION]
 	]
 	for(var i = array_length(_tokens)-1; i >= 0; i--) {	
 		for(var j = 0; j < array_length(_priority); j++) {
@@ -383,6 +427,7 @@ function parse(_tokens, _variables) { // Parces an array of token
 						}
 						return _parse_node;
 						break;
+					case TOKENTYPE.BOOL:
 					case TOKENTYPE.STRING:
 					case TOKENTYPE.NUMBER:
 						return new parse_node_value(_tokens[i].value);
@@ -392,6 +437,17 @@ function parse(_tokens, _variables) { // Parces an array of token
 						break;
 					case TOKENTYPE.FUNCTION:
 						return new parse_node_function(_tokens[i].value);
+						break;
+					case TOKENTYPE.EQUALS:
+					case TOKENTYPE.LESSER:
+					case TOKENTYPE.LESSEREQUAL:
+					case TOKENTYPE.GREATER:
+					case TOKENTYPE.GREATEREQUAL:
+						return new parse_node_comparison_operation (
+							parse(_tokens_before, _variables),
+							parse(_tokens_after, _variables),
+							_tokens[i].type
+						);
 						break;
 					case TOKENTYPE.ADD:
 					case TOKENTYPE.SUBTRACT:
@@ -409,7 +465,14 @@ function parse(_tokens, _variables) { // Parces an array of token
 							parse(_tokens_after, _variables)
 						);
 						break;
-					
+					case TOKENTYPE.IF:
+						if(i < array_length(_tokens)-1 && _tokens[i+1].type == TOKENTYPE.PARSED) {
+							return new parse_node_if(parse([_tokens[i+1]]));
+						}
+						break;
+					case TOKENTYPE.CLOSE_CURLY:
+						return new parse_node_close_curly();
+						break;
 				}
 			}
 			else {
@@ -440,9 +503,31 @@ function find_pair_position(_tokens, _starting_pos, _opening_type, _closing_type
 #endregion
 
 function run() { // Runs the code
-	for(var i = 0; i < array_length(parsed_commands); i++) {
-		parsed_commands[i].get_result();
+	// loops through each command
+	var _parse_len = array_length(parsed_commands);
+	for(var i = 0; i < _parse_len; i++) {
+		var _current_command = parsed_commands[i];
+		var _current_command_result = _current_command.get_result();
+		//show_debug_message(_current_command_result);
+		
+		// if statements
+		if(variable_struct_exists(_current_command, "if_boolean") && !_current_command_result) { // if this is an if and it returns false
+			var _value = 0;
+			for(var j = i; j < _parse_len; j++) {
+				var if_check_command = parsed_commands[j];
+				if(variable_struct_exists(if_check_command, "if_boolean")) _value++;
+				else if(variable_struct_exists(if_check_command, "is_close_curly")) _value--;
+				
+				if(_value == 0) {
+					i = j;
+					break;
+				}
+			}
+		}
+	
+		
 	}
+	// clears variables
 	ds_map_clear(variables);
 }
 
