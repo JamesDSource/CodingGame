@@ -207,8 +207,6 @@ if(text_editing != text_editing_last) {
 				_peek_index--;
 				var _numb = string_copy(text_editing, i, _peek_index-i + 1);
 				i = _peek_index;
-				show_debug_message("Unrounded" + _numb);
-				show_debug_message("Rounded" + string(real(_numb)));
 				ds_list_add(tokens, new token(TOKENTYPE.NUMBER, real(_numb)));
 				break;
 			case "\"":

@@ -47,6 +47,7 @@ global.standard_library.add_method(
 global.standard_library.add_method(
 	"print",
 	function std_print(_text) {
+		if(is_real(_text)) _text = string_from_real(_text);
 		show_debug_message(_text);
 	},
 	[["Text", ARGUMENTTYPE.ANY]]
