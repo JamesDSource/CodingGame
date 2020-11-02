@@ -1,7 +1,4 @@
-window_width = 400;
-window_height = 400;
-window_name = "Code IDE"
-
+event_inherited();
 t = 0;
 
 text_editing = "";
@@ -628,7 +625,51 @@ function run() { // Runs the code
 	ds_list_destroy(_loop_points);
 }
 
-function close() { // For closing the window
-	
+window_draw_function = function window_draw_ide() {
+	// drawing the window
+	draw_set_color(c_black);
+	draw_rectangle(0, 0, window_width, window_height, false);
+	// drawing the left margin
+	draw_set_color(c_gray);
+	draw_rectangle(0, 0, sidebar_width, window_height, false);
+	draw_set_color(c_white);
+	draw_set_halign(fa_right);
+	draw_set_valign(fa_top);
+	for(var i = 0; i <= string_count("\n", text_editing); i++) {
+		draw_text(sidebar_width, i*line_seperation, i + 1);	
+	}
+	// drawing the text
+	draw_set_valign(fa_top);
+	draw_set_halign(fa_left);
+	draw_set_color(c_white);
+	var _draw_y = 0;
+	var _draw_x = left_margin;
+	for(var i = 0; i <= string_length(text_editing); i++) {
+		var _char = string_char_at(text_editing, i);
+		if(i == cursor_offset || (i == 0 && string_length(text_editing) == 0)) draw_text(_draw_x - character_seperation/2, _draw_y, "|");
+		else if(i == string_length(text_editing) && cursor_offset == i + 1) {
+			if(_char == "\n") draw_text(left_margin, _draw_y + line_seperation, "|");
+			else if(_char == "\t") draw_text(_draw_x + tab_width, _draw_y, "|");
+			else draw_text(_draw_x + character_seperation, _draw_y, "|");
+		}
+		if(i != 0) {
+			switch(_char) {
+				case "\n":
+					_draw_y += line_seperation;
+					_draw_x = left_margin;
+					break;
+				case "\t":
+					draw_text(_draw_x, _draw_y, "~");
+					_draw_x += tab_width;
+					break;
+				default:
+					draw_set_color(c_white);
+					draw_text(_draw_x, _draw_y, _char);
+					_draw_x += character_seperation;
+					break;
+			}
+		}
+	}
+
 	
 }

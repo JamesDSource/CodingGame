@@ -39,27 +39,15 @@ function string_from_real(_real) {
 	var _return_string = string(int64(_real));
 	
 	var _found_decimal = false;
-	var _decimal_string = ".";
-	for(var i = 1; i <= 15; i++) {
-		try {
-			var _decimal_place = floor((frac(_real) mod power(10, -(i-1))) * power(10, i));
-		}
-		catch(_error) {
-			_decimal_string += string(frac(_real) * power(10, i));
-			break;
-		}
-	}
-	if(_decimal_string != ".") _return_string += _decimal_string;
+	var _decimal_string = string_format(frac(_real), 0, 5);
+	_decimal_string = string_delete(_decimal_string, 1, 1);
+	_return_string += _decimal_string;
 	
 	var _mark = [];
-	var _decimals_found = 0;
 	for(var i = string_length(_return_string); i >= 1; i--) {
 		var _done = false;
 		var _char = string_char_at(_return_string, i);
 		switch(_char) {
-			case ".": 
-				_decimals_found++;
-				if(string_count(".", _return_string) == _decimals_found) _done = true;
 			case "0": _mark = array_append(_mark, i); break;
 			default: _done = true; break;
 		}

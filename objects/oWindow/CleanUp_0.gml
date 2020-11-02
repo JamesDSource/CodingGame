@@ -1,0 +1,1 @@
+oWindow_manager.window_remove(id);
