@@ -1,14 +1,14 @@
 {
   "resources": [
-    {"id":{"name":"scrArray","path":"scripts/scrArray/scrArray.yy",},"order":15,},
-    {"id":{"name":"scrLibrary","path":"scripts/scrLibrary/scrLibrary.yy",},"order":16,},
-    {"id":{"name":"oIDE","path":"objects/oIDE/oIDE.yy",},"order":13,},
-    {"id":{"name":"scrString","path":"scripts/scrString/scrString.yy",},"order":14,},
+    {"id":{"name":"scrArray","path":"scripts/scrArray/scrArray.yy",},"order":14,},
+    {"id":{"name":"scrLibrary","path":"scripts/scrLibrary/scrLibrary.yy",},"order":15,},
+    {"id":{"name":"oIDE","path":"objects/oIDE/oIDE.yy",},"order":12,},
+    {"id":{"name":"scrString","path":"scripts/scrString/scrString.yy",},"order":13,},
     {"id":{"name":"oInit","path":"objects/oInit/oInit.yy",},"order":1,},
-    {"id":{"name":"oWindow","path":"objects/oWindow/oWindow.yy",},"order":17,},
+    {"id":{"name":"oWindow","path":"objects/oWindow/oWindow.yy",},"order":0,},
     {"id":{"name":"Room1","path":"rooms/Room1/Room1.yy",},"order":0,},
     {"id":{"name":"rmInit","path":"rooms/rmInit/rmInit.yy",},"order":0,},
-    {"id":{"name":"oWindow_manager","path":"objects/oWindow_manager/oWindow_manager.yy",},"order":6,},
+    {"id":{"name":"oWindow_manager","path":"objects/oWindow_manager/oWindow_manager.yy",},"order":1,},
   ],
   "Options": [
     {"name":"HTML5","path":"options/html5/options_html5.yy",},
@@ -29,8 +29,9 @@
     {"name":"Room1","path":"rooms/Room1/Room1.yy",},
   ],
   "Folders": [
-    {"folderPath":"folders/Rooms.yy","order":10,"resourceVersion":"1.0","name":"Rooms","tags":[],"resourceType":"GMFolder",},
-    {"folderPath":"folders/Init.yy","order":18,"resourceVersion":"1.0","name":"Init","tags":[],"resourceType":"GMFolder",},
+    {"folderPath":"folders/Rooms.yy","order":9,"resourceVersion":"1.0","name":"Rooms","tags":[],"resourceType":"GMFolder",},
+    {"folderPath":"folders/Init.yy","order":17,"resourceVersion":"1.0","name":"Init","tags":[],"resourceType":"GMFolder",},
+    {"folderPath":"folders/Windows.yy","order":5,"resourceVersion":"1.0","name":"Windows","tags":[],"resourceType":"GMFolder",},
   ],
   "AudioGroups": [
     {"targets":461609314234257646,"resourceVersion":"1.0","name":"audiogroup_default","resourceType":"GMAudioGroup",},

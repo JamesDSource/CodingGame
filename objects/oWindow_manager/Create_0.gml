@@ -9,6 +9,4 @@ function window_remove(_window_id) {
     if(_index != -1) ds_list_delete(windows, _index);
 }
 
-if(mouse_check_button_pressed(mb_left)) {
-    
-}
+window_selected = noone;

@@ -630,7 +630,7 @@ window_draw_function = function window_draw_ide() {
 	draw_set_color(c_black);
 	draw_rectangle(0, 0, window_width, window_height, false);
 	// drawing the left margin
-	draw_set_color(c_gray);
+	draw_set_color(c_ltgray);
 	draw_rectangle(0, 0, sidebar_width, window_height, false);
 	draw_set_color(c_white);
 	draw_set_halign(fa_right);

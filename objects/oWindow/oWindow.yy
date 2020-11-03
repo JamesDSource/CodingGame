@@ -29,8 +29,8 @@
   ],
   "overriddenProperties": [],
   "parent": {
-    "name": "CodingGame",
-    "path": "CodingGame.yyp",
+    "name": "Windows",
+    "path": "folders/Windows.yy",
   },
   "resourceVersion": "1.0",
   "name": "oWindow",
