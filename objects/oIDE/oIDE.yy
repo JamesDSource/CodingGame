@@ -26,7 +26,9 @@
     {"isDnD":false,"eventNum":0,"eventType":12,"collisionObjectId":null,"parent":{"name":"oIDE","path":"objects/oIDE/oIDE.yy",},"resourceVersion":"1.0","name":"","tags":[],"resourceType":"GMEvent",},
   ],
   "properties": [],
-  "overriddenProperties": [],
+  "overriddenProperties": [
+    {"propertyId":{"name":"window_name","path":"objects/oWindow/oWindow.yy",},"objectId":{"name":"oWindow","path":"objects/oWindow/oWindow.yy",},"value":"Default IDE","resourceVersion":"1.0","name":"","tags":[],"resourceType":"GMOverriddenProperty",},
+  ],
   "parent": {
     "name": "CodingGame",
     "path": "CodingGame.yyp",

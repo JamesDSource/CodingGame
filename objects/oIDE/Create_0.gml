@@ -22,10 +22,6 @@ cursor_offset = 1;
 cursor_line = 0;
 cursor_offset_on_line = 0;
 
-dragging = -1;
-horizontal_resize = false;
-verticle_resize = false;
-
 #region tokens
 tokens = ds_list_create();
 enum TOKENTYPE {

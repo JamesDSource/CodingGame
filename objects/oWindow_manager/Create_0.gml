@@ -10,3 +10,7 @@ function window_remove(_window_id) {
 }
 
 window_selected = noone;
+
+drag_point = -1;
+horizontal_resize = false;
+verticle_resize = false;
