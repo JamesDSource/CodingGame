@@ -4,6 +4,7 @@
     {"id":{"name":"scrLibrary","path":"scripts/scrLibrary/scrLibrary.yy",},"order":15,},
     {"id":{"name":"oIDE","path":"objects/oIDE/oIDE.yy",},"order":12,},
     {"id":{"name":"scrString","path":"scripts/scrString/scrString.yy",},"order":13,},
+    {"id":{"name":"oGrid","path":"objects/oGrid/oGrid.yy",},"order":18,},
     {"id":{"name":"oInit","path":"objects/oInit/oInit.yy",},"order":1,},
     {"id":{"name":"oWindow","path":"objects/oWindow/oWindow.yy",},"order":0,},
     {"id":{"name":"Room1","path":"rooms/Room1/Room1.yy",},"order":0,},
