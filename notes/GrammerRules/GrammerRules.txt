@@ -1,0 +1,8 @@
+Expression	: Term, PLUS/MINUS, Term
+
+Term		: Factor, MULT/DIV, Factor
+
+Factor		: INT/FLOAT
+			: PLUS/MINUS, Factor
+			: Left Paren, Expression, Right Paren
+

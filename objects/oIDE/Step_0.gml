@@ -1,11 +1,17 @@
 seperated_text = string_seperate("\n", text_editing);
 t++;
-if(text_editing != text_editing_last) {
+if(keyboard_check_pressed(vk_f4)) {
 	var _tokens = get_tokens(text_editing);
 	for(var i = 0; i < array_length(_tokens); i++) {
 		show_debug_message(_tokens[i].token_string());
 	}
 	show_debug_message("-------------------");
+	var _AST = new parse(_tokens).get_AST();
+	if(is_struct(_AST)) {
+		if(is_error(_AST)) show_debug_message(_AST.msg);
+		else show_debug_message(_AST.to_string());
+	}
+	show_debug_message("!-----------------!");
 	text_editing_last = text_editing;	
 }
 

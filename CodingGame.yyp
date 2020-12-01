@@ -1,8 +1,9 @@
 {
   "resources": [
-    {"id":{"name":"scrLanguage","path":"scripts/scrLanguage/scrLanguage.yy",},"order":19,},
+    {"id":{"name":"scrLanguage","path":"scripts/scrLanguage/scrLanguage.yy",},"order":0,},
     {"id":{"name":"scrArray","path":"scripts/scrArray/scrArray.yy",},"order":14,},
-    {"id":{"name":"scrLibrary","path":"scripts/scrLibrary/scrLibrary.yy",},"order":15,},
+    {"id":{"name":"GrammerRules","path":"notes/GrammerRules/GrammerRules.yy",},"order":1,},
+    {"id":{"name":"scrLibrary","path":"scripts/scrLibrary/scrLibrary.yy",},"order":2,},
     {"id":{"name":"oIDE","path":"objects/oIDE/oIDE.yy",},"order":12,},
     {"id":{"name":"scrString","path":"scripts/scrString/scrString.yy",},"order":13,},
     {"id":{"name":"oGrid","path":"objects/oGrid/oGrid.yy",},"order":18,},
@@ -34,6 +35,7 @@
     {"folderPath":"folders/Rooms.yy","order":9,"resourceVersion":"1.0","name":"Rooms","tags":[],"resourceType":"GMFolder",},
     {"folderPath":"folders/Init.yy","order":17,"resourceVersion":"1.0","name":"Init","tags":[],"resourceType":"GMFolder",},
     {"folderPath":"folders/Windows.yy","order":5,"resourceVersion":"1.0","name":"Windows","tags":[],"resourceType":"GMFolder",},
+    {"folderPath":"folders/Language.yy","order":20,"resourceVersion":"1.0","name":"Language","tags":[],"resourceType":"GMFolder",},
   ],
   "AudioGroups": [
     {"targets":461609314234257646,"resourceVersion":"1.0","name":"audiogroup_default","resourceType":"GMAudioGroup",},
