@@ -1,5 +1,6 @@
 {
   "resources": [
+    {"id":{"name":"scrLanguage","path":"scripts/scrLanguage/scrLanguage.yy",},"order":19,},
     {"id":{"name":"scrArray","path":"scripts/scrArray/scrArray.yy",},"order":14,},
     {"id":{"name":"scrLibrary","path":"scripts/scrLibrary/scrLibrary.yy",},"order":15,},
     {"id":{"name":"oIDE","path":"objects/oIDE/oIDE.yy",},"order":12,},
@@ -25,9 +26,9 @@
     "name": "Default",
     "children": [],
   },
-  "RoomOrder": [
-    {"name":"rmInit","path":"rooms/rmInit/rmInit.yy",},
-    {"name":"Room1","path":"rooms/Room1/Room1.yy",},
+  "RoomOrderNodes": [
+    {"roomId":{"name":"rmInit","path":"rooms/rmInit/rmInit.yy",},},
+    {"roomId":{"name":"Room1","path":"rooms/Room1/Room1.yy",},},
   ],
   "Folders": [
     {"folderPath":"folders/Rooms.yy","order":9,"resourceVersion":"1.0","name":"Rooms","tags":[],"resourceType":"GMFolder",},
@@ -38,13 +39,13 @@
     {"targets":461609314234257646,"resourceVersion":"1.0","name":"audiogroup_default","resourceType":"GMAudioGroup",},
   ],
   "TextureGroups": [
-    {"isScaled":true,"autocrop":true,"border":2,"mipsToGenerate":0,"targets":461609314234257646,"resourceVersion":"1.0","name":"Default","resourceType":"GMTextureGroup",},
+    {"isScaled":true,"autocrop":true,"border":2,"mipsToGenerate":0,"groupParent":null,"targets":461609314234257646,"resourceVersion":"1.0","name":"Default","resourceType":"GMTextureGroup",},
   ],
   "IncludedFiles": [],
   "MetaData": {
-    "IDEVersion": "2.3.0.529",
+    "IDEVersion": "2.3.1.536",
   },
-  "resourceVersion": "1.3",
+  "resourceVersion": "1.4",
   "name": "CodingGame",
   "tags": [],
   "resourceType": "GMProject",

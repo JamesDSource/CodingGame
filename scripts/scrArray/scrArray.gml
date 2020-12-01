@@ -13,7 +13,7 @@ function array_insert(_array, _index, _value) {
 	return _new_array;
 }
 
-function array_delete(_array, _index) {
+function array_remove(_array, _index) {
 	var _new_array = [];
 	for(var i = 0; i < array_length(_array)-1; i++) {
 		if(i < _index) _new_array[i] = _array[i];
