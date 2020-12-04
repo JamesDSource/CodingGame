@@ -7,10 +7,8 @@ if(keyboard_check_pressed(vk_f4)) {
 	}
 	show_debug_message("-------------------");
 	var _AST = new parse(_tokens).get_AST();
-	if(is_struct(_AST)) {
-		if(is_error(_AST)) show_debug_message(_AST.msg);
-		else show_debug_message(_AST.to_string());
-	}
+	var _interpreter = new interpreter()
+	_interpreter.run(_AST);
 	show_debug_message("!-----------------!");
 	text_editing_last = text_editing;	
 }

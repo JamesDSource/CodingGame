@@ -1,24 +1,36 @@
 #region Error
 enum ERRORTYPE {
 	SYNTAX,
-	COMPILE_TIME
+	RUN_TIME
 }
 function error(_type, _pos) constructor {
 	struct_is_error = true;
+	prefix_msg = "";
 	msg = "";
 	switch(_type) {
-		case ERRORTYPE.SYNTAX: msg = "SYNTAX ERROR: "; break;
+		case ERRORTYPE.SYNTAX: prefix_msg = "SYNTAX ERROR: "; break;
+		case ERRORTYPE.RUN_TIME: prefix_msg = "RUNTIME ERROR: "; break;
 	}
 	pos = _pos;
 	
 	function missing_char_error(_char) {
-		msg += "Missing character expected, '" + _char + "'";
+		msg = "Missing character expected, '" + _char + "'";
 	}	
 	function missing_number_error() {
-		msg += "Missing number expected";
+		msg = "Missing number expected";
 	}	
 	function invalid_type_error(_type_expected) {
-		msg += "Invalid type, \"" + _type_expected + "\" was expected.";
+		msg = "Invalid type, \"" + _type_expected + "\" was expected.";
+	}
+	function node_not_found_error(_node_name) {
+		msg = "Invalid node type, \"" + _node_name + "\"";
+	}
+	function missing_node_error() {
+		msg = "Missing node expected";
+	}
+	
+	function get_error() {
+		return prefix_msg + msg + ", at line " + string(pos);
 	}
 }
 
@@ -41,8 +53,10 @@ enum TOKENTYPE {
 	SEMI_COLON,
 	ADD,
 	MULT,
+	POWER,
 	SUBTRACT,
 	DIVIDE,
+	MOD,
 	EQUALS,
 	GREATER,
 	GREATEREQUAL,
@@ -72,8 +86,10 @@ global.token_names = [
 	"Semi Colon",
 	"Add",
 	"Mult",
+	"Power",
 	"Subtract",
 	"Divide",
+	"Mod",
 	"Equals",
 	"Greater",
 	"Greater Equal",
@@ -275,10 +291,17 @@ function get_tokens(_code) {
 				_tokens = array_append(_tokens, new token(TOKENTYPE.ADD, _char, i, i+1));
 				break
 			case "*": // Multiplication
-				_tokens = array_append(_tokens, new token(TOKENTYPE.MULT, _char, i, i+1));
+				if(i + 1 <= _text_len && string_char_at(text_editing, i + 1) == "*") {
+					_tokens = array_append(_tokens, new token(TOKENTYPE.POWER, "**", i, i+2));
+					i++;	
+				}
+				else _tokens = array_append(_tokens, new token(TOKENTYPE.MULT, _char, i, i+1));
 				break;
 			case "-": // Subtraction
 				_tokens = array_append(_tokens, new token(TOKENTYPE.SUBTRACT, _char, i, i+1));
+				break;
+			case "%": // Mod
+				_tokens = array_append(_tokens, new token(TOKENTYPE.MOD, _char, i, i+1));
 				break;
 			case "/": // Divition
 				_tokens = array_append(_tokens, new token(TOKENTYPE.DIVIDE, _char, i, i+1));
@@ -315,10 +338,6 @@ function parse_node_number(_value) constructor {
 	node_name = "Number";
 	value = _value;
 	
-	function get_result() {
-		return value;	
-	}
-	
 	function to_string() {
 		return string(value);
 	}
@@ -330,30 +349,6 @@ function parse_node_binary_operation(_left, _right, _operation) constructor {
 	right = _right;
 	operation = _operation.type;
 	
-	function get_result() {
-		var _left_result = 0;
-		var _right_result = 0;
-		if(is_struct(left))  _left_result = left.get_result();	
-		if(is_struct(right)) _right_result = right.get_result();
-		
-		if(!is_string(_left_result) && !is_real(_left_result)) _left_result = 0;
-		if(!is_string(_right_result) && !is_real(_right_result)) _right_result = 0;
-		
-		if(is_string(_left_result) || is_string(_right_result)) {
-			if(operation == TOKENTYPE.ADD) {
-				_right_result = string(_right_result);
-				_left_result = string(_left_result);
-			}
-		}
-		
-		switch(operation) {
-			case TOKENTYPE.ADD: return _left_result + _right_result;
-			case TOKENTYPE.SUBTRACT: return _left_result - _right_result;
-			case TOKENTYPE.MULT: return _left_result * _right_result;
-			case TOKENTYPE.DIVIDE: return _left_result / _right_result;
-		}
-	}
-	
 	function to_string() {
 		var _operation_string = "";
 		switch(operation) {
@@ -361,18 +356,17 @@ function parse_node_binary_operation(_left, _right, _operation) constructor {
 			case TOKENTYPE.SUBTRACT: _operation_string = "-"; break;
 			case TOKENTYPE.MULT: _operation_string = "*"; break;
 			case TOKENTYPE.DIVIDE: _operation_string = "/"; break;
+			case TOKENTYPE.POWER: _operation_string = "**"; break;
+			case TOKENTYPE.MOD: _operation_string = "%"; break;
 		}
 		return "[" + left.to_string() + " " + _operation_string + " " + right.to_string() + "]";
 	}
 }
 
 function parse_node_unary_operation(_operation, _node) constructor {
+	node_name = "Unary operation";
 	operation = _operation.type;
 	node = _node;
-	
-	function get_result() {
-		
-	}
 	
 	function to_string() {
 		var _operation_str = operation == TOKENTYPE.ADD ? "+" : "-";
@@ -578,7 +572,7 @@ function parse(_tokens) constructor {
 	}
 	
 	function term() {
-		return binary_operation(factor, [TOKENTYPE.MULT, TOKENTYPE.DIVIDE]);
+		return binary_operation(factor, [TOKENTYPE.MULT, TOKENTYPE.DIVIDE, TOKENTYPE.POWER, TOKENTYPE.MOD]);
 	}
 	
 	function expression() {
@@ -594,5 +588,77 @@ function parse(_tokens) constructor {
 		}
 	}
 	
+}
+#endregion
+#region Interpreter
+function interpreter() constructor {
+	function run(_AST) {
+		if(is_struct(_AST)) {
+			if(is_error(_AST)) show_debug_message(_AST.get_error());
+			else {
+				var _run_result = get_result(_AST);
+				if(is_error(_run_result)) show_debug_message(_run_result.get_error());
+				else show_debug_message(_run_result);
+			};
+		}
+	}
+	
+	function get_result(_node) {
+		// Checks to see if this is a node
+		// If it is not, returns an error
+		if(!is_struct(_node) || !variable_struct_exists(_node, "node_name")) {
+			var _error = new error(ERRORTYPE.RUN_TIME, -1);
+			_error.missing_node_error();
+			return _error;
+		}
+		
+		// Find return condition based on the name of the node
+		switch(_node.node_name) {
+			case "Number": 
+				return _node.value; 
+				break;
+			
+			case "Binary operation":
+				var _left_result = get_result(_node.left);
+				var _right_result = get_result(_node.right);
+				if(is_error(_left_result)) return _left_result;
+				if(is_error(_right_result)) return _right_result;
+				
+				switch(_node.operation) {
+					case TOKENTYPE.ADD: 		return _left_result + _right_result; break;
+					case TOKENTYPE.SUBTRACT:	return _left_result - _right_result; break;
+					case TOKENTYPE.MULT:		return _left_result*_right_result; break;
+					case TOKENTYPE.POWER:		return power(_left_result, _right_result); break;
+					case TOKENTYPE.MOD:
+					case TOKENTYPE.DIVIDE:
+						if(_right_result == 0) {
+							var _error = new error(ERRORTYPE.RUN_TIME, -1);
+							_error.msg += "Attempted to divide by 0";
+							return _error;
+						}
+						else {
+							if(_node.operation == TOKENTYPE.DIVIDE) return _left_result/_right_result;
+							else if(_node.operation == TOKENTYPE.MOD) return _left_result%_right_result;
+						}
+						break;
+				}
+				break;
+			
+			case "Unary operation":
+				var _return_result = get_result(_node.node);
+				if(!is_error(_return_result) && _node.operation == TOKENTYPE.SUBTRACT) {
+					_return_result *= -1;
+				}
+				return _return_result;
+				break;
+			
+			default: // If there is no return condition for this node, then return an error
+				var _error = new error(ERRORTYPE.RUN_TIME, -1);
+				_error.node_not_found_error(_node.node_name);
+				return _error;
+				break;
+			
+		}
+	}
 }
 #endregion
