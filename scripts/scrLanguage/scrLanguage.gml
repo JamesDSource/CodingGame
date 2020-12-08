@@ -49,7 +49,6 @@ enum TOKENTYPE {
 	VAR,
 	NUMBER,
 	STRING,
-	BOOL,
 	COMMA,
 	FUNCTION,
 	ASSIGN,
@@ -62,9 +61,9 @@ enum TOKENTYPE {
 	MOD,
 	EQUALS,
 	GREATER,
-	GREATEREQUAL,
+	GREATER_EQUAL,
 	LESSER,
-	LESSEREQUAL,
+	LESSER_EQUAL,
 	OPEN_CURLY,
 	CLOSE_CURLY,
 	OPEN_PAREN,
@@ -87,7 +86,6 @@ global.token_names = [
 	"Var",
 	"Number",
 	"String",
-	"Bool",
 	"Comma",
 	"Function",
 	"Assign",
@@ -212,8 +210,8 @@ function get_tokens(_code) {
 					case "elif": _tokens = array_append(_tokens, new token(TOKENTYPE.ELIF, _symbol, _symbol_start, _peek_index)); break;
 					case "else": _tokens = array_append(_tokens, new token(TOKENTYPE.ELSE, _symbol, _symbol_start, _peek_index)); break;
 					case "loop": _tokens = array_append(_tokens, new token(TOKENTYPE.LOOP, _symbol, _symbol_start, _peek_index)); break;
-					case "true": _tokens = array_append(_tokens, new token(TOKENTYPE.BOOL, true, _symbol_start, _peek_index)); break;
-					case "false": _tokens = array_append(_tokens, new token(TOKENTYPE.BOOL, false, _symbol_start, _peek_index)); break;
+					case "true": _tokens = array_append(_tokens, new token(TOKENTYPE.NUMBER, true, _symbol_start, _peek_index)); break;
+					case "false": _tokens = array_append(_tokens, new token(TOKENTYPE.NUMBER, false, _symbol_start, _peek_index)); break;
 					case "and": _tokens = array_append(_tokens, new token(TOKENTYPE.AND, _symbol, _symbol_start, _peek_index)); break;
 					case "or": _tokens = array_append(_tokens, new token(TOKENTYPE.OR, _symbol, _symbol_start, _peek_index)); break;
 					default: _found_keyword = false; break;
@@ -290,14 +288,14 @@ function get_tokens(_code) {
 				break;
 			case ">":
 				if(i + 1 <= _text_len && string_char_at(_code, i + 1) == "=") {
-					_tokens = array_append(_tokens, new token(TOKENTYPE.GREATEREQUAL, ">=", i, i+2));
+					_tokens = array_append(_tokens, new token(TOKENTYPE.GREATER_EQUAL, ">=", i, i+2));
 					i++;	
 				}
 				else _tokens = array_append(_tokens, new token(TOKENTYPE.GREATER, _char, i, i+1));
 				break;
 			case "<":
 				if(i + 1 <= _text_len && string_char_at(_code, i + 1) == "=") {
-					_tokens = array_append(_tokens, new token(TOKENTYPE.LESSEREQUAL, "<=", i, i+2));
+					_tokens = array_append(_tokens, new token(TOKENTYPE.LESSER_EQUAL, "<=", i, i+2));
 					i++;	
 				}
 				else _tokens = array_append(_tokens, new token(TOKENTYPE.LESSER, _char, i, i+1));
@@ -414,6 +412,12 @@ function parse_node_assignment(_variable_name, _value) constructor {
 	}
 }
 
+function parse_node_if(_cases, _else_case) constructor {
+	node_name = "If";
+	cases = _cases;
+	else_case = _else_case;
+}
+
 function parse_node_function(_value, _arguments) constructor {
 	node_name = "function";
 	value = _value;
@@ -436,6 +440,8 @@ function parse_node_function(_value, _arguments) constructor {
 	}
 }
 
+
+
 function parse_node_list(_list) constructor {
 	node_name = "list";
 	list = _list;
@@ -448,36 +454,6 @@ function parse_node_list(_list) constructor {
 			}
 		}
 		return _return_list;
-	}
-}
-
-function parse_node_comparison_operation(_left, _right, _operation) constructor {
-	node_name = "comparison operation";
-	left = _left;
-	right = _right;
-	operation = _operation;
-	
-	function get_result() {
-		var _left_result = 0;
-		var _right_result = 0;
-		if(is_struct(left))  _left_result = left.get_result();	
-		if(is_struct(right)) _right_result = right.get_result();
-		
-		switch(operation) {
-			case TOKENTYPE.EQUALS: return _left_result == _right_result;
-			case TOKENTYPE.GREATER: return _left_result > _right_result;
-			case TOKENTYPE.GREATEREQUAL: return _left_result >= _right_result;
-			case TOKENTYPE.LESSER: return _left_result < _right_result;
-			case TOKENTYPE.LESSEREQUAL: return _left_result <= _right_result;
-		}
-	}
-}
-
-function parse_node_if(_boolean) constructor {
-	node_name = "if";
-	if_boolean = _boolean;
-	function get_result() {
-		return if_boolean.get_result() > 0;
 	}
 }
 
@@ -535,6 +511,56 @@ function parser(_tokens) constructor {
 		return _left_factor;
 	}
 	
+	function if_statement() {
+		var _cases = [];
+		var _else_expression = undefined;
+		function check_for_condition_expression(_cond) {
+			if(advance()) {
+				if(_cond) {
+					var _condition = expression();
+					if(is_error(_condition)) return _condition;
+				}
+				
+				// Check if there is not a open curly brace
+				if(current_token.type != TOKENTYPE.OPEN_CURLY) {
+					var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+					_error.missing_char_error("{");
+					return _error;
+				}
+				
+				advance();
+				
+				var _expression = expression();
+				if(is_error(_expression)) return _expression;
+				
+				if(_cond) return {condition: _condition, expression: _expression};
+				else return _expression
+			}
+			else {
+				var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+				_error.msg = "Expected expression";
+				return _error;
+			}
+		}
+		
+		var _if_condition_expression = check_for_condition_expression(true);
+		if(is_error(_if_condition_expression)) return _if_condition_expression;
+		_cases = array_append(_cases, _if_condition_expression);
+		
+		while(current_token.type == TOKENTYPE.ELIF) {
+			var _elif_condition_expression = check_for_condition_expression(true);
+			if(is_error(_elif_condition_expression)) return _elif_condition_expression;
+			_cases = array_append(_cases, _elif_condition_expression);
+		}		
+		
+		if(current_token.type == TOKENTYPE.ELSE) {
+			var _else_condition_expression = check_for_condition_expression(false);
+			if(is_error(_else_condition_expression)) return _else_condition_expression;
+			_else_expression = _else_condition_expression;
+		}
+		return new parse_node_if(_cases, _else_expression);
+	}
+	
 	function atom() {
 		var _return_token = current_token;
 		switch(current_token.type) {
@@ -564,6 +590,10 @@ function parser(_tokens) constructor {
 				return new parse_node_variable(_return_token.value);
 				break;
 			
+			case TOKENTYPE.IF:
+				return if_statement()
+				break;
+			
 			default:
 				var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
 				_error.msg = "Expected float, int, variable, '+', '-', or '('";
@@ -581,6 +611,7 @@ function parser(_tokens) constructor {
 		switch(current_token.type) {
 			case TOKENTYPE.ADD:
 			case TOKENTYPE.SUBTRACT:
+			case TOKENTYPE.NOT:
 				if(advance()) {
 					var _unary_node_wrap = factor()
 					if(is_error(_unary_node_wrap)) return _unary_node_wrap;
@@ -599,6 +630,14 @@ function parser(_tokens) constructor {
 	
 	function term() {
 		return binary_operation(factor, [TOKENTYPE.MULT, TOKENTYPE.DIVIDE, TOKENTYPE.MOD]);
+	}
+	
+	function arithmatic() {
+		return binary_operation(term, [TOKENTYPE.ADD, TOKENTYPE.SUBTRACT]);
+	}
+	
+	function comparison() {
+		return binary_operation(arithmatic, [TOKENTYPE.EQUALS, TOKENTYPE.GREATER, TOKENTYPE.LESSER, TOKENTYPE.GREATER_EQUAL, TOKENTYPE.LESSER_EQUAL, TOKENTYPE.NOT_EQUALS]);
 	}
 	
 	function expression() {
@@ -634,7 +673,12 @@ function parser(_tokens) constructor {
 				}
 			}
 		}
-		else return binary_operation(term, [TOKENTYPE.ADD, TOKENTYPE.SUBTRACT]);
+		else return binary_operation(comparison, [TOKENTYPE.AND, TOKENTYPE.OR]);
+	}
+	
+	function statement() {
+		statements = [];
+		
 	}
 	
 	function get_AST() {
@@ -665,6 +709,11 @@ function interpreter() constructor {
 		}
 	}
 	
+	function is_true(_value) {
+		if(is_real(_value) && _value > 0) return true;
+		else return false;
+	}
+	
 	function get_result(_node) {
 		// Checks to see if this is a node
 		// If it is not, returns an error
@@ -687,10 +736,10 @@ function interpreter() constructor {
 				if(is_error(_right_result)) return _right_result;
 				
 				switch(_node.operation) {
-					case TOKENTYPE.ADD: 		return _left_result + _right_result; break;
-					case TOKENTYPE.SUBTRACT:	return _left_result - _right_result; break;
-					case TOKENTYPE.MULT:		return _left_result*_right_result; break;
-					case TOKENTYPE.POWER:		return power(_left_result, _right_result); break;
+					case TOKENTYPE.ADD: 			return _left_result + _right_result; break;
+					case TOKENTYPE.SUBTRACT:		return _left_result - _right_result; break;
+					case TOKENTYPE.MULT:			return _left_result*_right_result; break;
+					case TOKENTYPE.POWER:			return power(_left_result, _right_result); break;
 					case TOKENTYPE.MOD:
 					case TOKENTYPE.DIVIDE:
 						if(_right_result == 0) {
@@ -703,6 +752,14 @@ function interpreter() constructor {
 							else if(_node.operation == TOKENTYPE.MOD) return _left_result%_right_result;
 						}
 						break;
+					case TOKENTYPE.EQUALS:			return _left_result == _right_result; break;
+					case TOKENTYPE.GREATER:			return _left_result > _right_result; break;
+					case TOKENTYPE.LESSER:			return _left_result < _right_result; break;
+					case TOKENTYPE.GREATER_EQUAL:	return _left_result >= _right_result; break;
+					case TOKENTYPE.LESSER_EQUAL:	return _left_result <= _right_result; break;
+					case TOKENTYPE.NOT_EQUALS:		return _left_result != _right_result; break;
+					case TOKENTYPE.AND:				return _left_result && _right_result; break;
+					case TOKENTYPE.OR:				return _left_result || _right_result; break;
 				}
 				break;
 			
@@ -728,6 +785,20 @@ function interpreter() constructor {
 				var _return_result = get_result(_node.value);
 				if(!is_error(_return_result)) variables[? _node.variable_name] = _return_result;
 				return _return_result;
+				break;
+			
+			case "If":
+				for(var i = 0; i < array_length(_node.cases); i++) {
+					var _case = _node.cases[i];
+					
+					var _cond_result = get_result(_case.condition);
+					if(is_error(_cond_result)) return _cond_result;
+					
+					if(is_true(_cond_result)) {
+						return get_result(_case.expression);
+					}
+				}
+				if(is_struct(_node.else_case)) return get_result(_node.else_case);
 				break;
 			
 			default: // If there is no return condition for this node, then return an error

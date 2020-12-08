@@ -1,12 +1,22 @@
-Expression	: Term, PLUS/MINUS, Term
-			: Keyword: var, Variable, Assignment, Expression
+Statement		: Expression, (Semi Colon, Expression)
+
+Expression		: Keyword: var, Variable, Assignment, Expression
+				: Comparison, AND/OR, Comparison
 			
-Term		: Factor, MULT/DIV, Factor
+Comparison		: Arithmatic, Comparison(==, <=, <, >, >=, !=), Arithmatic
+			
+Arithmatic		: Term, PLUS/MINUS, Term
+			
+Term			: Factor, MULT/DIV, Factor
 
-Factor		: PLUS/MINUS, Factor
-			: Pow
+Factor			: PLUS/MINUS/NOT, Factor
+				: Pow
 
-Pow			: Atom, POW, Atom
+Pow				: Atom, POW, Atom
 
-Atom		: INT/FLOAT
-			: Left Paren, Expression, Right Paren
+Atom			: INT/FLOAT
+				: Left Paren, Expression, Right Paren
+
+If_statement	: IF, Expression, {, Expression, }
+				: (ELIF, Expression, {, Expression, })
+				: (ELSE, Expression, {, Expression, })
