@@ -1,8 +1,12 @@
 Expression	: Term, PLUS/MINUS, Term
-
+			: Keyword: var, Variable, Assignment, Expression
+			
 Term		: Factor, MULT/DIV, Factor
 
-Factor		: INT/FLOAT
-			: PLUS/MINUS, Factor
-			: Left Paren, Expression, Right Paren
+Factor		: PLUS/MINUS, Factor
+			: Pow
 
+Pow			: Atom, POW, Atom
+
+Atom		: INT/FLOAT
+			: Left Paren, Expression, Right Paren

@@ -30,7 +30,9 @@ function error(_type, _pos) constructor {
 	}
 	
 	function get_error() {
-		return prefix_msg + msg + ", at line " + string(pos);
+		var _error_message = prefix_msg + msg;
+		if(pos != -1) _error_message += ", at line " + string(pos);
+		return _error_message;
 	}
 }
 
@@ -44,6 +46,7 @@ function is_error(_struct) {
 enum TOKENTYPE {
 	PARSED,
 	VARIABLE,
+	VAR,
 	NUMBER,
 	STRING,
 	BOOL,
@@ -71,12 +74,17 @@ enum TOKENTYPE {
 	IF,
 	ELIF,
 	ELSE,
-	LOOP
+	LOOP,
+	AND,
+	OR,
+	NOT,
+	NOT_EQUALS
 }
 
 global.token_names = [
 	"Parsed",
 	"Variable",
+	"Var",
 	"Number",
 	"String",
 	"Bool",
@@ -104,7 +112,11 @@ global.token_names = [
 	"If",
 	"Elif",
 	"Else",
-	"Loop"
+	"Loop",
+	"And",
+	"Or",
+	"Not",
+	"Not equals"
 ];
 
 function token(_type, _value, _start_pos, _end_pos) constructor {
@@ -184,23 +196,26 @@ function get_tokens(_code) {
 					_peek_index++;
 					if(_peek_index == _text_len + 1) _found_symbol = true;
 					else {
-						var _peek_char = string_char_at(text_editing, _peek_index);
+						var _peek_char = string_char_at(_code, _peek_index);
 						if(string_pos(_peek_char, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_") == 0) _found_symbol = true;
 					}
 				}
 				_peek_index--;
-				var _symbol = string_copy(text_editing, i, _peek_index-i + 1);
+				var _symbol = string_copy(_code, i, _peek_index-i + 1);
 				var _symbol_start = i;
 				i = _peek_index;
 				
 				var _found_keyword = true;
 				switch(_symbol) {
+					case "var": _tokens = array_append(_tokens, new token(TOKENTYPE.VAR, _symbol, _symbol_start, _peek_index)); break;
 					case "if": _tokens = array_append(_tokens, new token(TOKENTYPE.IF, _symbol, _symbol_start, _peek_index)); break;
 					case "elif": _tokens = array_append(_tokens, new token(TOKENTYPE.ELIF, _symbol, _symbol_start, _peek_index)); break;
 					case "else": _tokens = array_append(_tokens, new token(TOKENTYPE.ELSE, _symbol, _symbol_start, _peek_index)); break;
 					case "loop": _tokens = array_append(_tokens, new token(TOKENTYPE.LOOP, _symbol, _symbol_start, _peek_index)); break;
 					case "true": _tokens = array_append(_tokens, new token(TOKENTYPE.BOOL, true, _symbol_start, _peek_index)); break;
 					case "false": _tokens = array_append(_tokens, new token(TOKENTYPE.BOOL, false, _symbol_start, _peek_index)); break;
+					case "and": _tokens = array_append(_tokens, new token(TOKENTYPE.AND, _symbol, _symbol_start, _peek_index)); break;
+					case "or": _tokens = array_append(_tokens, new token(TOKENTYPE.OR, _symbol, _symbol_start, _peek_index)); break;
 					default: _found_keyword = false; break;
 				}
 				if(_found_keyword) break;
@@ -236,7 +251,7 @@ function get_tokens(_code) {
 					_peek_index++;
 					if(_peek_index == _text_len + 1) _found_number = true;
 					else {
-						var _peek_char = string_char_at(text_editing, _peek_index);
+						var _peek_char = string_char_at(_code, _peek_index);
 						if(_peek_char == ".") {
 							if(_has_dot) _found_number = true;
 							else _has_dot = true;	
@@ -245,7 +260,7 @@ function get_tokens(_code) {
 					}
 				}
 				_peek_index--;
-				var _numb = string_copy(text_editing, i, _peek_index-i + 1);
+				var _numb = string_copy(_code, i, _peek_index-i + 1);
 				_tokens = array_append(_tokens, new token(TOKENTYPE.NUMBER, real(_numb), i, _peek_index));
 				i = _peek_index;
 				break;
@@ -256,32 +271,32 @@ function get_tokens(_code) {
 					_peek_index++;
 					if(_peek_index == _text_len + 1) _found_string = true;
 					else {
-						var _peek_char = string_char_at(text_editing, _peek_index);	
+						var _peek_char = string_char_at(_code, _peek_index);	
 						if(_peek_char == "\"") _found_string = true;
 					}
 				}
-				var _str = string_copy(text_editing, i+1, _peek_index-i-1);
+				var _str = string_copy(_code, i+1, _peek_index-i-1);
 				_tokens = array_append(_tokens, new token(TOKENTYPE.STRING, _str, i, _peek_index));
 				i = _peek_index;
 				break;
 			case ";": // Semi Colon
 				_tokens = array_append(_tokens, new token(TOKENTYPE.SEMI_COLON, _char, i, i+1));
 			case "=": // Addition and equals
-				if(i + 1 <= _text_len && string_char_at(text_editing, i + 1) == "=") {
+				if(i + 1 <= _text_len && string_char_at(_code, i + 1) == "=") {
 					_tokens = array_append(_tokens, new token(TOKENTYPE.EQUALS, "==", i, i+2));
 					i++;	
 				}
 				else _tokens = array_append(_tokens, new token(TOKENTYPE.ASSIGN, _char, i, i+1));
 				break;
 			case ">":
-				if(i + 1 <= _text_len && string_char_at(text_editing, i + 1) == "=") {
+				if(i + 1 <= _text_len && string_char_at(_code, i + 1) == "=") {
 					_tokens = array_append(_tokens, new token(TOKENTYPE.GREATEREQUAL, ">=", i, i+2));
 					i++;	
 				}
 				else _tokens = array_append(_tokens, new token(TOKENTYPE.GREATER, _char, i, i+1));
 				break;
 			case "<":
-				if(i + 1 <= _text_len && string_char_at(text_editing, i + 1) == "=") {
+				if(i + 1 <= _text_len && string_char_at(_code, i + 1) == "=") {
 					_tokens = array_append(_tokens, new token(TOKENTYPE.LESSEREQUAL, "<=", i, i+2));
 					i++;	
 				}
@@ -291,17 +306,16 @@ function get_tokens(_code) {
 				_tokens = array_append(_tokens, new token(TOKENTYPE.ADD, _char, i, i+1));
 				break
 			case "*": // Multiplication
-				if(i + 1 <= _text_len && string_char_at(text_editing, i + 1) == "*") {
-					_tokens = array_append(_tokens, new token(TOKENTYPE.POWER, "**", i, i+2));
-					i++;	
-				}
-				else _tokens = array_append(_tokens, new token(TOKENTYPE.MULT, _char, i, i+1));
+				_tokens = array_append(_tokens, new token(TOKENTYPE.MULT, _char, i, i+1));
 				break;
 			case "-": // Subtraction
 				_tokens = array_append(_tokens, new token(TOKENTYPE.SUBTRACT, _char, i, i+1));
 				break;
 			case "%": // Mod
 				_tokens = array_append(_tokens, new token(TOKENTYPE.MOD, _char, i, i+1));
+				break;
+			case "^": // Power
+				_tokens = array_append(_tokens, new token(TOKENTYPE.POWER, _char, i, i+1));
 				break;
 			case "/": // Divition
 				_tokens = array_append(_tokens, new token(TOKENTYPE.DIVIDE, _char, i, i+1));
@@ -326,6 +340,13 @@ function get_tokens(_code) {
 				break;
 			case ",": // Comma
 				_tokens = array_append(_tokens, new token(TOKENTYPE.COMMA, _char, i, i+1));
+				break;
+			case "!": // Not
+				if(i + 1 < _text_len && string_char_at(_code, i+1) == "=") {
+					_tokens = array_append(_tokens, new token(TOKENTYPE.NOT_EQUALS, "!=", i, i+2));
+					i++;
+				}
+				else _tokens = array_append(_tokens, new token(TOKENTYPE.NOT, _char, i, i+1));
 				break;
 		}
 	}
@@ -374,6 +395,25 @@ function parse_node_unary_operation(_operation, _node) constructor {
 	}
 }
 
+function parse_node_variable(_name) constructor {
+	node_name = "Variable";
+	variable_name = _name;
+	
+	function to_string() {
+		return variable_name;
+	}
+}
+
+function parse_node_assignment(_variable_name, _value) constructor {
+	node_name = "Assignment";
+	variable_name = _variable_name;
+	value = _value;
+	
+	function to_string() {
+		return "[ " + varibable_name + " = " + value.to_string() + " ]";
+	}
+}
+
 function parse_node_function(_value, _arguments) constructor {
 	node_name = "function";
 	value = _value;
@@ -411,22 +451,6 @@ function parse_node_list(_list) constructor {
 	}
 }
 
-function parse_node_variable(_name) constructor {
-	node_name = "variable";
-	variable_name = _name;
-	index = -1;
-	
-	function get_result() {
-		var _index = -1;
-		if(index != -1) _index = index.get_result();
-		
-		var _variable_value = variables[? variable_name];
-		if(_index == -1 || !is_array(_variable_value)) return _variable_value;
-		else if(is_array(_index)) return _variable_value[_index[0]];
-		else return _variable_value[_index];
-	}
-}
-
 function parse_node_comparison_operation(_left, _right, _operation) constructor {
 	node_name = "comparison operation";
 	left = _left;
@@ -445,27 +469,6 @@ function parse_node_comparison_operation(_left, _right, _operation) constructor 
 			case TOKENTYPE.GREATEREQUAL: return _left_result >= _right_result;
 			case TOKENTYPE.LESSER: return _left_result < _right_result;
 			case TOKENTYPE.LESSEREQUAL: return _left_result <= _right_result;
-		}
-	}
-}
-
-function parse_node_assignment(_left, _right) constructor {
-	node_name = "assignment";
-	left = _left;
-	right = _right;
-	
-	function get_result() {
-		var _right_result = undefined;
-		if(is_struct(right)) _right_result = right.get_result();
-		
-		if(is_struct(left) && left.node_name == "variable") {
-			var _current_variable = variables[? left.variable_name];
-			if(is_array(_current_variable) && left.index != -1) {
-				_current_variable[left.index] = _right_result;
-				variables[? left.variable_name] = _current_variable;
-			}
-			else variables[? left.variable_name] = _right_result;
-			return left.variable_name + " = " + string(variables[? left.variable_name]);
 		}
 	}
 }
@@ -503,7 +506,7 @@ function parse_node_close_curly() constructor {
 	}
 }
 #endregion
-function parse(_tokens) constructor {
+function parser(_tokens) constructor {
 	tokens = _tokens;
 	token_index = -1;
 	current_token = -1;
@@ -532,7 +535,7 @@ function parse(_tokens) constructor {
 		return _left_factor;
 	}
 	
-	function factor() { // Function that checks for factors
+	function atom() {
 		var _return_token = current_token;
 		switch(current_token.type) {
 			case TOKENTYPE.OPEN_PAREN:
@@ -550,6 +553,32 @@ function parse(_tokens) constructor {
 					return _error;
 				}
 				break;
+			
+			case TOKENTYPE.NUMBER:
+				advance();
+				return new parse_node_number(_return_token.value);
+				break;
+				
+			case TOKENTYPE.VARIABLE:
+				advance();
+				return new parse_node_variable(_return_token.value);
+				break;
+			
+			default:
+				var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+				_error.msg = "Expected float, int, variable, '+', '-', or '('";
+				return _error;
+		}
+	}
+	
+	
+	function pow() {
+		return binary_operation(atom, [TOKENTYPE.POWER]);
+	}
+	
+	function factor() {
+		var _return_token = current_token;
+		switch(current_token.type) {
 			case TOKENTYPE.ADD:
 			case TOKENTYPE.SUBTRACT:
 				if(advance()) {
@@ -563,20 +592,49 @@ function parse(_tokens) constructor {
 					return _error;
 				}
 				break;
-			case TOKENTYPE.NUMBER:
-				var _return_token = current_token;
-				advance();
-				return new parse_node_number(_return_token.value);
-				break;
 		}
+		
+		return pow()
 	}
 	
 	function term() {
-		return binary_operation(factor, [TOKENTYPE.MULT, TOKENTYPE.DIVIDE, TOKENTYPE.POWER, TOKENTYPE.MOD]);
+		return binary_operation(factor, [TOKENTYPE.MULT, TOKENTYPE.DIVIDE, TOKENTYPE.MOD]);
 	}
 	
 	function expression() {
-		return binary_operation(term, [TOKENTYPE.ADD, TOKENTYPE.SUBTRACT]);
+		if(current_token.type == TOKENTYPE.VAR) {
+			advance();
+			
+			// Check if the next token is not a variable
+			if(current_token.type != TOKENTYPE.VARIABLE) {
+				var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+				_error.msg = "Expected a variable after \"var\" keyword";
+				return _error;
+			}
+			else {
+				var _variable_name = current_token.value;
+				advance();
+				
+				// Check if the next token is not an assignment
+				if(current_token.type != TOKENTYPE.ASSIGN) {
+					var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+					_error.msg = "Expected '=' after variable";
+					return _error;
+				}
+				
+				if(advance()) {
+					var _expression = expression();
+					if(is_error(_expression)) return _expression;
+					else return new parse_node_assignment(_variable_name, _expression);
+				}
+				else { // Check if there is no expression after the assignment
+					var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+					_error.msg = "Expected an expression after '='";
+					return _error;
+				}
+			}
+		}
+		else return binary_operation(term, [TOKENTYPE.ADD, TOKENTYPE.SUBTRACT]);
 	}
 	
 	function get_AST() {
@@ -592,13 +650,17 @@ function parse(_tokens) constructor {
 #endregion
 #region Interpreter
 function interpreter() constructor {
+	variables = -1;
+	
 	function run(_AST) {
 		if(is_struct(_AST)) {
 			if(is_error(_AST)) show_debug_message(_AST.get_error());
 			else {
+				variables = ds_map_create();
 				var _run_result = get_result(_AST);
 				if(is_error(_run_result)) show_debug_message(_run_result.get_error());
 				else show_debug_message(_run_result);
+				ds_map_destroy(variables);
 			};
 		}
 	}
@@ -633,7 +695,7 @@ function interpreter() constructor {
 					case TOKENTYPE.DIVIDE:
 						if(_right_result == 0) {
 							var _error = new error(ERRORTYPE.RUN_TIME, -1);
-							_error.msg += "Attempted to divide by 0";
+							_error.msg = "Attempted to divide by 0";
 							return _error;
 						}
 						else {
@@ -652,12 +714,27 @@ function interpreter() constructor {
 				return _return_result;
 				break;
 			
+			case "Variable":
+				var _return_result = variables[? _node.variable_name];
+				if(is_undefined(_return_result)) {
+					var _error = new error(ERRORTYPE.RUN_TIME, -1);
+					_error.msg = _node.variable_name + " is undefined."
+					return _error;
+				}
+				else return _return_result;
+				break;
+			
+			case "Assignment":
+				var _return_result = get_result(_node.value);
+				if(!is_error(_return_result)) variables[? _node.variable_name] = _return_result;
+				return _return_result;
+				break;
+			
 			default: // If there is no return condition for this node, then return an error
 				var _error = new error(ERRORTYPE.RUN_TIME, -1);
 				_error.node_not_found_error(_node.node_name);
 				return _error;
 				break;
-			
 		}
 	}
 }
