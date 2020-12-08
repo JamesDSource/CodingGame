@@ -1,9 +1,9 @@
-Statement		: Expression, (Semi Colon, Expression)
+Statements		: NEWLINE*, Expression, (NEWLINE+, Expression), NEWLINE*
 
-Expression		: Keyword: var, Variable, Assignment, Expression
+Expression		: VAR, VARIABLE, (OPEN BRACKET, INT, CLOSE BRACKET), ASSIGNMENT, Expression
 				: Comparison, AND/OR, Comparison
 			
-Comparison		: Arithmatic, Comparison(==, <=, <, >, >=, !=), Arithmatic
+Comparison		: Arithmatic, COMPARISON(==, <=, <, >, >=, !=), Arithmatic
 			
 Arithmatic		: Term, PLUS/MINUS, Term
 			
@@ -14,9 +14,14 @@ Factor			: PLUS/MINUS/NOT, Factor
 
 Pow				: Atom, POW, Atom
 
-Atom			: INT/FLOAT
-				: Left Paren, Expression, Right Paren
+Atom			: NUMBERS/STRING
+				: VARIABLE, (OPEN BRACKET, INT, CLOSE BRACKET)
+				: LEFT PAREN, Expression, RIGHT PAREN
 
-If_statement	: IF, Expression, {, Expression, }
-				: (ELIF, Expression, {, Expression, })
-				: (ELSE, Expression, {, Expression, })
+List_statement	: LEFT BRACKET, Expression, (COMMA, Expression), RIGHT BRACKET
+
+If_statement	: IF, Expression, LEFT CURLY, Expression, RIGHT CURLY
+				: (ELIF, Expression, LEFT CURLY, Expression, RIGHT CURLY)
+				: (ELSE, Expression, LEFT CURLY, Expression, RIGHT CURLY)
+
+loop_statement	: LOOP, Expression, LEFT CURLY, Expression, RIGHT CURLY
