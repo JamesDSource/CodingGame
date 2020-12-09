@@ -531,6 +531,10 @@ function parser(_tokens) constructor {
 					if(is_error(_condition)) return _condition;
 				}
 				
+				while(current_token.type == TOKENTYPE.NEW_LINE) {
+					if(!advance()) break;
+				}
+				
 				// Check if there is not a open curly brace
 				if(current_token.type != TOKENTYPE.OPEN_CURLY) {
 					var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
@@ -538,13 +542,35 @@ function parser(_tokens) constructor {
 					return _error;
 				}
 				
+				var _eq_value = 1;
+				var _statement_tokens = [];
+				while(_eq_value != 0) {
+					if(!advance()) {
+						var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+						_error.missing_char_error("}");
+						return _error;
+					}
+					if(current_token.type == TOKENTYPE.OPEN_CURLY) _eq_value++;
+					else if(current_token.type == TOKENTYPE.CLOSE_CURLY) _eq_value--;
+					if(_eq_value != 0) {
+						_statement_tokens = array_append(_statement_tokens, current_token);
+					}
+				}
+				
+				var _statement_parser = new parser(_statement_tokens);
+				var _if_ast = _statement_parser.get_AST();
+				if(is_error(_if_ast)) return _if_ast;
+				if(_cond) var _return =  {condition: _condition, statements: _if_ast};
+				else var _return = _if_ast;
+				delete _statement_parser;
+				
+				// delete newlines
 				advance();
+				while(peek(1) && peek_token.type == TOKENTYPE.NEW_LINE) {
+					if(!advance()) break;
+				}
 				
-				var _expression = expression();
-				if(is_error(_expression)) return _expression;
-				
-				if(_cond) return {condition: _condition, expression: _expression};
-				else return _expression
+				return _return;
 			}
 			else {
 				var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
@@ -553,20 +579,22 @@ function parser(_tokens) constructor {
 			}
 		}
 		
-		var _if_condition_expression = check_for_condition_expression(true);
-		if(is_error(_if_condition_expression)) return _if_condition_expression;
-		_cases = array_append(_cases, _if_condition_expression);
+		var _if_condition_statements = check_for_condition_expression(true);
+		if(is_error(_if_condition_statements)) return _if_condition_statements;
+		_cases = array_append(_cases, _if_condition_statements);
 		
-		while(current_token.type == TOKENTYPE.ELIF) {
-			var _elif_condition_expression = check_for_condition_expression(true);
-			if(is_error(_elif_condition_expression)) return _elif_condition_expression;
-			_cases = array_append(_cases, _elif_condition_expression);
+		while(peek(1) && peek_token.type == TOKENTYPE.ELIF) {
+			advance();
+			var _elif_condition_statements = check_for_condition_expression(true);
+			if(is_error(_elif_condition_statements)) return _elif_condition_statements;
+			_cases = array_append(_cases, _elif_condition_statements);
 		}		
 		
-		if(current_token.type == TOKENTYPE.ELSE) {
-			var _else_condition_expression = check_for_condition_expression(false);
-			if(is_error(_else_condition_expression)) return _else_condition_expression;
-			_else_expression = _else_condition_expression;
+		if(peek(1) && peek_token.type == TOKENTYPE.ELSE) {
+			advance();
+			var _else_condition_statements = check_for_condition_expression(false);
+			if(is_error(_else_condition_statements)) return _else_condition_statements;
+			_else_expression =  _else_condition_statements;
 		}
 		return new parse_node_if(_cases, _else_expression);
 	}
@@ -987,10 +1015,10 @@ function interpreter() constructor {
 					if(is_error(_cond_result)) return _cond_result;
 					
 					if(_cond_result) {
-						return get_result(_case.expression);
+						return get_result(_case.statements);
 					}
 				}
-				if(is_struct(_node.else_case)) return get_result(_node.else_case);
+				if(!is_undefined(_node.else_case)) return get_result(_node.else_case);
 				break;
 			
 			case "Loop":
