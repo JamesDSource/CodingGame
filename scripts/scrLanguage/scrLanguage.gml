@@ -741,6 +741,10 @@ function parser(_tokens) constructor {
 				advance();
 				return new parse_node_list(_list);
 			}
+			else {
+				advance();
+				return new parse_node_list([]);
+			}
 		}
 		else {
 			var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
@@ -952,12 +956,21 @@ function parser(_tokens) constructor {
 	}
 	
 	function get_AST() {
-		if(array_length(tokens) > 0) {
+		var _can_parse = false;
+		for(var i = 0; i < array_length(tokens); i++) {
+			if(tokens[i].type != TOKENTYPE.NEW_LINE) {
+				_can_parse = true;
+				break;
+			}	
+		}
+		if(_can_parse) {
 			token_index = -1;
 			current_token = -1;
+			peek_token = -1;
 			advance();
 			return statements();
 		}
+		return undefined;
 	}
 	
 }
@@ -1025,9 +1038,7 @@ function interpreter() constructor {
 		// Checks to see if this is a node
 		// If it is not, returns an error
 		if(!is_struct(_node) || !variable_struct_exists(_node, "node_name")) {
-			var _error = new error(ERRORTYPE.RUN_TIME, -1);
-			_error.missing_node_error();
-			return _error;
+			return undefined;
 		}
 		
 		// Find return condition based on the name of the node
@@ -1121,7 +1132,7 @@ function interpreter() constructor {
 				if(is_error(_return_result)) return _return_result;
 				
 				if(_node.index != -1) {
-					var _variable = variables[? _node.variable_name];
+					var _variable = current_scope.get_value(_node.variable_name);
 					if(is_array(_variable)) {
 						var _index = get_result(_node.index);
 						if(is_error(_index)) return _index;
@@ -1133,7 +1144,7 @@ function interpreter() constructor {
 							return _error;
 						}
 						
-						if(_index < 0 || _index > array_length(_variable)) {
+						if(_index < 0) {
 							var _error = new error(ERRORTYPE.RUN_TIME, -1);
 							_error.array_out_of_range_error();
 							return _error;
