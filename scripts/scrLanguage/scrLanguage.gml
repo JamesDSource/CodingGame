@@ -49,7 +49,6 @@ function is_error(_struct) {
 enum TOKENTYPE {
 	NONE,
 	VARIABLE,
-	VAR,
 	NUMBER,
 	STRING,
 	COMMA,
@@ -77,6 +76,8 @@ enum TOKENTYPE {
 	ELIF,
 	ELSE,
 	LOOP,
+	FOR,
+	IN,
 	AND,
 	OR,
 	NOT,
@@ -86,7 +87,6 @@ enum TOKENTYPE {
 global.token_names = [
 	"None",
 	"Variable",
-	"Var",
 	"Number",
 	"String",
 	"Comma",
@@ -114,6 +114,8 @@ global.token_names = [
 	"Elif",
 	"Else",
 	"Loop",
+	"For",
+	"In",
 	"And",
 	"Or",
 	"Not",
@@ -208,11 +210,12 @@ function get_tokens(_code) {
 				
 				var _found_keyword = true;
 				switch(_symbol) {
-					case "var": _tokens = array_append(_tokens, new token(TOKENTYPE.VAR, _symbol, _symbol_start, _peek_index)); break;
 					case "if": _tokens = array_append(_tokens, new token(TOKENTYPE.IF, _symbol, _symbol_start, _peek_index)); break;
 					case "elif": _tokens = array_append(_tokens, new token(TOKENTYPE.ELIF, _symbol, _symbol_start, _peek_index)); break;
 					case "else": _tokens = array_append(_tokens, new token(TOKENTYPE.ELSE, _symbol, _symbol_start, _peek_index)); break;
 					case "loop": _tokens = array_append(_tokens, new token(TOKENTYPE.LOOP, _symbol, _symbol_start, _peek_index)); break;
+					case "for": _tokens = array_append(_tokens, new token(TOKENTYPE.FOR, _symbol, _symbol_start, _peek_index)); break;
+					case "in": _tokens = array_append(_tokens, new token(TOKENTYPE.IN, _symbol, _symbol_start, _peek_index)); break;
 					case "true": _tokens = array_append(_tokens, new token(TOKENTYPE.NUMBER, true, _symbol_start, _peek_index)); break;
 					case "false": _tokens = array_append(_tokens, new token(TOKENTYPE.NUMBER, false, _symbol_start, _peek_index)); break;
 					case "and": _tokens = array_append(_tokens, new token(TOKENTYPE.AND, _symbol, _symbol_start, _peek_index)); break;
@@ -440,6 +443,13 @@ function parse_node_loop(_count_expression, _body) constructor {
 	body = _body;
 }
 
+function parse_node_for(_variable_name, _list_expression, _body) constructor {
+	node_name = "For";
+	variable_name = _variable_name;
+	list_expression = _list_expression;
+	body = _body;
+}
+
 function parse_node_list(_expression_list) constructor {
 	node_name = "List";
 	expression_list = _expression_list;
@@ -604,6 +614,10 @@ function parser(_tokens) constructor {
 			var _condition = expression();
 			if(is_error(_condition)) return _condition;
 			
+			while(current_token.type == TOKENTYPE.NEW_LINE) {
+				if(!advance()) break;
+			} 
+			
 			// Check if there is not open curly
 			if(current_token.type != TOKENTYPE.OPEN_CURLY) {
 				var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
@@ -611,11 +625,26 @@ function parser(_tokens) constructor {
 				return _error;
 			}
 			
-			advance();
+			var _body_tokens = [];
+			var _eq_value = 1;
+			while(_eq_value != 0) {
+				if(!advance()) {
+					var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+					_error.missing_char_error("}");
+					return _error;
+				}
+				if(current_token.type == TOKENTYPE.OPEN_CURLY) _eq_value++;
+				else if(current_token.type == TOKENTYPE.CLOSE_CURLY) _eq_value--;
+				if(_eq_value != 0) {
+					_body_tokens = array_append(_body_tokens, current_token);
+				}
+			}
 			
-			var _body = expression();
+			var _loop_parser = new parser(_body_tokens);
+			var _body = _loop_parser.get_AST();
 			if(is_error(_body)) return _body
-			
+			delete _loop_parser;
+			advance();
 			return new parse_node_loop(_condition, _body);
 		}
 		else {
@@ -623,6 +652,72 @@ function parser(_tokens) constructor {
 			_error.msg = "Expected condition";
 			return _error;
 		}
+	}
+	
+	function for_statement() {
+		advance();
+		
+		// Check if the token is not a variable
+		if(current_token.type != TOKENTYPE.VARIABLE) {
+			var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+			_error.msg = "Expected variable name";
+			return _error;
+		}
+		// Get variable name
+		var _variable_name = current_token.value;
+		
+		advance();
+		
+		// Check if the token is not an "In" token
+		if(current_token.type != TOKENTYPE.IN) {
+			var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+			_error.msg = "Expected keyword \"in\"";
+			return _error;
+		}
+		
+		if(!advance()) {
+			var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+			_error.msg = "Expected expression";
+			return _error;
+		}
+		
+		// Get expression
+		var _expression = expression();
+		if(is_error(_expression)) return _expression;
+	
+		// Remove any newlines
+		while(current_token.type == TOKENTYPE.NEW_LINE) {
+				if(!advance()) break;
+		} 
+		
+		// Check if there is not a open curly
+		if(current_token.type != TOKENTYPE.OPEN_CURLY) {
+			var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+			_error.missing_char_error("{");
+			return _error;
+		}
+		
+		var _body_tokens = [];
+		var _eq_value = 1;
+		while(_eq_value != 0) {
+			if(!advance()) {
+				var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+				_error.missing_char_error("}");
+				return _error;
+			}
+			if(current_token.type == TOKENTYPE.OPEN_CURLY) _eq_value++;
+			else if(current_token.type == TOKENTYPE.CLOSE_CURLY) _eq_value--;
+			if(_eq_value != 0) {
+				_body_tokens = array_append(_body_tokens, current_token);
+			}
+		}
+		
+		var _body_parser = new parser(_body_tokens);
+		var _body = _body_parser.get_AST();
+		delete _body_parser;
+		if(is_error(_body)) return _body;
+		advance();
+		return new parse_node_for(_variable_name, _expression, _body);
 	}
 	
 	function list_statement() {
@@ -715,6 +810,10 @@ function parser(_tokens) constructor {
 			
 			case TOKENTYPE.LOOP:
 				return loop_statement();
+				break;			
+			
+			case TOKENTYPE.FOR:
+				return for_statement();
 				break;
 			
 			case TOKENTYPE.OPEN_BRACKET:
@@ -863,19 +962,61 @@ function parser(_tokens) constructor {
 	
 }
 #endregion
+#region Scope
+function scope(_parent) constructor {
+	parent = _parent;
+	data = {};
+	function get_value(_var_name) {
+		if(variable_struct_exists(data, _var_name)) return data[$ _var_name];
+		else if(is_struct(parent)) return parent.get_value(_var_name);
+		else return undefined;
+	}
+	function set_value(_var_name, _value, _look_for_parent) {
+		if(_look_for_parent && !variable_struct_exists(data, _var_name) && is_struct(parent)) {
+			var _tree = parent;
+			var _var_search = true
+			while(_var_search) {
+				if(variable_struct_exists(_tree.data, _var_name)) {
+					_tree.data[$ _var_name] = _value
+					return undefined;
+				}
+				else if(is_struct(_tree.parent)) _tree = _tree.parent;
+				else _var_search = false;
+			}
+		}
+		data[$ _var_name] = _value;
+	}
+}
+#endregion
 #region Interpreter
 function interpreter() constructor {
-	variables = -1;
+	function add_scope_layer() {
+		var _old_scope = current_scope;
+		current_scope = new scope(-1);
+		if(is_struct(_old_scope)) {
+			current_scope.parent = _old_scope;
+		}
+	}	
+	function remove_scope_layer() {
+		if(is_struct(current_scope)) {
+			var _old_scope = current_scope;
+			if(is_struct(_old_scope.parent)) current_scope = _old_scope.parent;
+			else current_scope = -1;
+			delete _old_scope;
+		}
+	}
+	
+	current_scope = -1;
 	
 	function run(_AST) {
 		if(is_struct(_AST)) {
 			if(is_error(_AST)) show_debug_message(_AST.get_error());
 			else {
-				variables = ds_map_create();
+				add_scope_layer();
 				var _run_result = get_result(_AST);
 				if(is_error(_run_result)) show_debug_message(_run_result.get_error());
 				else show_debug_message(_run_result);
-				ds_map_destroy(variables);
+				while(is_struct(current_scope)) remove_scope_layer();
 			};
 		}
 	}
@@ -942,10 +1083,10 @@ function interpreter() constructor {
 				break;
 			
 			case "Variable":
-				var _return_result = variables[? _node.variable_name];
+				var _return_result = current_scope.get_value(_node.variable_name);
 				if(is_undefined(_return_result)) {
 					var _error = new error(ERRORTYPE.RUN_TIME, -1);
-					_error.msg = _node.variable_name + " is undefined."
+					_error.msg = _node.variable_name + " is undefined in the current scope."
 					return _error;
 				}
 				
@@ -999,15 +1140,16 @@ function interpreter() constructor {
 						}
 						
 						_variable[_index] = _return_result;
-						variables[? _node.variable_name] = _variable;
+						current_scope.set_value(_node.variable_name, _variable, true);
 						return _variable;
 					}
 				}
-				else variables[? _node.variable_name] = _return_result;
+				else current_scope.set_value(_node.variable_name, _return_result, true);
 				return _return_result;
 				break;
 			
 			case "If":
+				add_scope_layer();
 				for(var i = 0; i < array_length(_node.cases); i++) {
 					var _case = _node.cases[i];
 					
@@ -1015,13 +1157,21 @@ function interpreter() constructor {
 					if(is_error(_cond_result)) return _cond_result;
 					
 					if(_cond_result) {
-						return get_result(_case.statements);
+						var _result = get_result(_case.statements)
+						remove_scope_layer();
+						return _result;
 					}
 				}
-				if(!is_undefined(_node.else_case)) return get_result(_node.else_case);
+				if(!is_undefined(_node.else_case)) {
+					var _result = get_result(_node.else_case)
+					remove_scope_layer();
+					return _result;
+				}
+				remove_scope_layer();
 				break;
 			
 			case "Loop":
+				add_scope_layer();
 				var _count = get_result(_node.count_expression);
 				if(is_error(_count)) return _count;
 				
@@ -1035,8 +1185,32 @@ function interpreter() constructor {
 				
 				for(var i = 0; i < _count; i++) {
 					var _body = get_result(_node.body);
-					if(is_error(_body) || i == _count-1) return _body;
+					if(is_error(_body) || i == _count-1) {
+						remove_scope_layer();
+						return _body;
+					}
 				}
+			
+			case "For":
+				add_scope_layer();
+				var _list_expression_result = get_result(_node.list_expression);
+				if(is_error(_list_expression_result)) return _list_expression_result;
+				
+				if(!is_array(_list_expression_result)) {
+					var _error = new error(ERRORTYPE.RUN_TIME, -1);
+					_error.msg = "Array expected after keyword \"in\""
+					return _error;
+				}
+				
+				for(var i = 0; i < array_length(_list_expression_result); i++) {
+					current_scope.set_value(_node.variable_name, _list_expression_result[i], false);
+					var _body_result = get_result(_node.body);
+					if(is_error(_body_result) || i == array_length(_list_expression_result)-1) {
+						remove_scope_layer();
+						return _body_result;
+					}
+				}
+				break;
 			
 			case "List":
 				var _return_list = [];

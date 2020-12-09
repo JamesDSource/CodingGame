@@ -24,4 +24,6 @@ If_statement	: IF, Expression, LEFT CURLY, Expression, RIGHT CURLY
 				: (ELIF, Expression, LEFT CURLY, Expression, RIGHT CURLY)
 				: (ELSE, Expression, LEFT CURLY, Expression, RIGHT CURLY)
 
-loop_statement	: LOOP, Expression, LEFT CURLY, Expression, RIGHT CURLY
+loop_statement	: LOOP, Expression, LEFT CURLY, Expression, RIGHT CURLY, STATEMENTS, LEFT CURLY
+
+For_statement	: FOR, VARIABLE, IN, Expression (Must be list), RIGHT CURLY, STATEMENTS, LEFT CURLY
