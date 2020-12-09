@@ -15,15 +15,18 @@ Factor			: PLUS/MINUS/NOT, Factor
 Pow				: Atom, POW, Atom
 
 Atom			: NUMBERS/STRING
+				: VARIABLE/METHOD, OPEN PAREN, (Expression), (COMMA, Expression)*, CLOSE PAREN
 				: VARIABLE, (OPEN BRACKET, INT, CLOSE BRACKET)
 				: LEFT PAREN, Expression, RIGHT PAREN
 
-List_statement	: LEFT BRACKET, Expression, (COMMA, Expression), RIGHT BRACKET
+Func statement	: FUNC, VARIABLE, LEFT PAREN, (VARIABLE), (COMMA, VARIABLE)*, RIGHT PAREN, LEFT CURLY, Statements, RIGHT CURLY
 
-If_statement	: IF, Expression, LEFT CURLY, Expression, RIGHT CURLY
+List statement	: LEFT BRACKET, Expression, (COMMA, Expression), RIGHT BRACKET
+
+If statement	: IF, Expression, LEFT CURLY, Expression, RIGHT CURLY
 				: (ELIF, Expression, LEFT CURLY, Expression, RIGHT CURLY)
 				: (ELSE, Expression, LEFT CURLY, Expression, RIGHT CURLY)
 
-loop_statement	: LOOP, Expression, LEFT CURLY, Expression, RIGHT CURLY, STATEMENTS, LEFT CURLY
+loop statement	: LOOP, Expression, LEFT CURLY, Expression, RIGHT CURLY, STATEMENTS, LEFT CURLY
 
-For_statement	: FOR, VARIABLE, IN, Expression (Must be list), RIGHT CURLY, STATEMENTS, LEFT CURLY
+For statement	: FOR, VARIABLE, IN, Expression (Must be list), RIGHT CURLY, STATEMENTS, LEFT CURLY

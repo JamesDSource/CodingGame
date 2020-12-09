@@ -52,7 +52,7 @@ enum TOKENTYPE {
 	NUMBER,
 	STRING,
 	COMMA,
-	FUNCTION,
+	METHOD,
 	ASSIGN,
 	NEW_LINE,
 	ADD,
@@ -78,6 +78,7 @@ enum TOKENTYPE {
 	LOOP,
 	FOR,
 	IN,
+	FUNC,
 	AND,
 	OR,
 	NOT,
@@ -90,7 +91,7 @@ global.token_names = [
 	"Number",
 	"String",
 	"Comma",
-	"Function",
+	"Method",
 	"Assign",
 	"New line",
 	"Add",
@@ -116,6 +117,7 @@ global.token_names = [
 	"Loop",
 	"For",
 	"In",
+	"Function",
 	"And",
 	"Or",
 	"Not",
@@ -216,6 +218,7 @@ function get_tokens(_code) {
 					case "loop": _tokens = array_append(_tokens, new token(TOKENTYPE.LOOP, _symbol, _symbol_start, _peek_index)); break;
 					case "for": _tokens = array_append(_tokens, new token(TOKENTYPE.FOR, _symbol, _symbol_start, _peek_index)); break;
 					case "in": _tokens = array_append(_tokens, new token(TOKENTYPE.IN, _symbol, _symbol_start, _peek_index)); break;
+					case "func": _tokens = array_append(_tokens, new token(TOKENTYPE.FUNC, _symbol, _symbol_start, _peek_index)); break;
 					case "true": _tokens = array_append(_tokens, new token(TOKENTYPE.NUMBER, true, _symbol_start, _peek_index)); break;
 					case "false": _tokens = array_append(_tokens, new token(TOKENTYPE.NUMBER, false, _symbol_start, _peek_index)); break;
 					case "and": _tokens = array_append(_tokens, new token(TOKENTYPE.AND, _symbol, _symbol_start, _peek_index)); break;
@@ -455,41 +458,19 @@ function parse_node_list(_expression_list) constructor {
 	expression_list = _expression_list;
 }
 
-function parse_node_function(_value, _arguments) constructor {
-	node_name = "function";
-	value = _value;
+function parse_node_func(_variable_name, _arguments, _body) constructor {
+	node_name = "Func";
+	variable_name = _variable_name;
 	arguments = _arguments;
-	
-	function get_result() {
-		var _args = arguments.get_result();
-		switch(array_length(value.arguments)) {
-			case 1: return value.method_call(_args[0]); break;
-			case 2: return value.method_call(_args[0], _args[1]); break;
-			case 3: return value.method_call(_args[0], _args[1], _args[2]); break;
-			case 4: return value.method_call(_args[0], _args[1], _args[2], _args[3]); break;
-			case 5: return value.method_call(_args[0], _args[1], _args[2], _args[3], _args[4]); break;
-			case 6: return value.method_call(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5]); break;
-			case 7: return value.method_call(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6]); break;
-			case 8: return value.method_call(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7]); break;
-			case 9: return value.method_call(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8]); break;
-			case 10: return value.method_call(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9]); break;
-		}
-	}
+	body = _body;
 }
 
-function parse_node_else() constructor {
-	node_name = "else";
-	function get_result() {
-		return undefined;
-	}
+function parse_node_call(_identifier, _arguments) constructor {
+	node_name = "Call";
+	identifier = _identifier;
+	arguments = _arguments;
 }
 
-function parse_node_close_curly() constructor {
-	node_name = "close curly";
-	function get_result() {
-		return undefined;
-	}
-}
 #endregion
 function parser(_tokens) constructor {
 	tokens = _tokens;
@@ -514,6 +495,12 @@ function parser(_tokens) constructor {
 		}
 		peek_token = new token(TOKENTYPE.NONE, -1, -1, -1);
 		return false;
+	}
+	
+	function remove_newlines() {
+		while(current_token.type == TOKENTYPE.NEW_LINE) {
+			if(!advance()) break;
+		}
 	}
 	
 	function binary_operation(_func, _operation_tokens) {
@@ -541,9 +528,7 @@ function parser(_tokens) constructor {
 					if(is_error(_condition)) return _condition;
 				}
 				
-				while(current_token.type == TOKENTYPE.NEW_LINE) {
-					if(!advance()) break;
-				}
+				remove_newlines();
 				
 				// Check if there is not a open curly brace
 				if(current_token.type != TOKENTYPE.OPEN_CURLY) {
@@ -614,9 +599,7 @@ function parser(_tokens) constructor {
 			var _condition = expression();
 			if(is_error(_condition)) return _condition;
 			
-			while(current_token.type == TOKENTYPE.NEW_LINE) {
-				if(!advance()) break;
-			} 
+			remove_newlines();
 			
 			// Check if there is not open curly
 			if(current_token.type != TOKENTYPE.OPEN_CURLY) {
@@ -685,10 +668,7 @@ function parser(_tokens) constructor {
 		var _expression = expression();
 		if(is_error(_expression)) return _expression;
 	
-		// Remove any newlines
-		while(current_token.type == TOKENTYPE.NEW_LINE) {
-				if(!advance()) break;
-		} 
+		remove_newlines();
 		
 		// Check if there is not a open curly
 		if(current_token.type != TOKENTYPE.OPEN_CURLY) {
@@ -724,15 +704,21 @@ function parser(_tokens) constructor {
 		if(advance()) {
 			var _list = [];
 			if(current_token.type != TOKENTYPE.CLOSE_BRACKET) {
+				remove_newlines();
 				var _first_item = expression();
 				if(is_error(_first_item)) return _first_item;
 				_list = [_first_item];
 				while(current_token.type == TOKENTYPE.COMMA) {
 					if(!advance()) break;
+					remove_newlines();
+					
+					if(current_token.type == TOKENTYPE.CLOSE_BRACKET) break;
+					
 					var _list_item = expression();
 					if(is_error(_list_item)) return _list_item;
 					_list = array_append(_list, _list_item);
 				}
+				remove_newlines();
 				if(current_token.type != TOKENTYPE.CLOSE_BRACKET) {
 					var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
 					_error.missing_char_error("]");
@@ -751,6 +737,93 @@ function parser(_tokens) constructor {
 			_error.missing_char_error("]");
 			return _error;
 		}
+	}
+	
+	function func_statement() {
+		var _parameters = [];
+		var _variable_name = "";
+		
+		advance();
+	
+		// Check if the current token is not a variable
+		if(current_token.type != TOKENTYPE.VARIABLE) {
+			var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+			_error.msg = "Expected variable";
+			return _error;
+		}
+		_variable_name = current_token.value;
+		advance();
+		remove_newlines();
+		
+		// Check if the current token if not an open paren
+		if(current_token.type != TOKENTYPE.OPEN_PAREN) {
+			var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+			_error.missing_char_error("(");
+			return _error;
+		}
+		
+		advance();
+		remove_newlines();
+		
+		// Check for parameters
+		if(current_token.type == TOKENTYPE.VARIABLE) {
+			_parameters = [current_token.value];
+			advance();
+			remove_newlines();
+			while(current_token.type == TOKENTYPE.COMMA) {
+				if(!advance()) break;
+				remove_newlines();
+				
+				// Check if not a variable
+				if(current_token.type != TOKENTYPE.VARIABLE) {
+					var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+					_error.msg = "Expected variable";
+					return _error;
+				}
+				_parameters = array_append(_parameters, current_token.value);
+				advance();
+				remove_newlines();
+			}
+		}
+		
+		// Check if the current token is not a close paren
+		if(current_token.type != TOKENTYPE.CLOSE_PAREN) {
+			var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+			_error.missing_char_error(")");
+			return _error;
+		}
+		
+		advance();
+		remove_newlines();
+		
+		// Check if there is not an open curly
+		if(current_token.type != TOKENTYPE.OPEN_CURLY) {
+			var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+			_error.missing_char_error("{");
+			return _error;
+		}
+		
+		// Get the body of the function
+		var _body_tokens = [];
+		var _eq_value = 1;
+		while(_eq_value) {
+			if(!advance()) break;
+			
+			if(current_token.type == TOKENTYPE.OPEN_CURLY) _eq_value++;
+			else if(current_token.type == TOKENTYPE.CLOSE_CURLY) _eq_value--;
+			
+			if(_eq_value != 0) {
+				_body_tokens = array_append(_body_tokens, current_token);
+			}
+		}
+		
+		// Parsing the body of the function
+		var _body_parser = new parser(_body_tokens);
+		var _body = _body_parser.get_AST();
+		delete _body_parser;
+		
+		advance();
+		return new parse_node_func(_variable_name, _parameters, _body);
 	}
 	
 	function atom() {
@@ -782,30 +855,78 @@ function parser(_tokens) constructor {
 				return new parse_node_string(_return_token.value);
 				break;
 				
+			case TOKENTYPE.METHOD:
 			case TOKENTYPE.VARIABLE:
 				advance();
-				// Checking for the index if this is a variable array
-				var _index = -1;
-				if(current_token.type == TOKENTYPE.OPEN_BRACKET) {
-					if(advance()) {
-						var _index_expression = expression();
-						if(is_error(_index_expression)) return _index_expression;
-						_index = _index_expression;
+				if(current_token.type == TOKENTYPE.OPEN_PAREN) { // Checking for a function/method call
+					var _parameters = [];
+					var _identifier = _return_token.value;
+					
+					// Checking if the statement ends here
+					if(!advance()) {
+						var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+						_error.missing_char_error(")");
+						return _error;
+					}
+					remove_newlines();
+					
+					// Checking if there are no arguments
+					if(current_token.type != TOKENTYPE.CLOSE_PAREN) {
+						var _expression = expression();
+						if(is_error(_expression)) return _expression;
+						_parameters = [_expression]
+						remove_newlines();
+						while(current_token.type == TOKENTYPE.COMMA) {
+							if(!advance()) break;
+							remove_newlines();
+							
+							var _expression = expression();
+							if(is_error(_expression)) return _expression;
+							_parameters = array_append(_parameters, _expression);
+							
+							remove_newlines();
+						}
 						
-						if(current_token.type != TOKENTYPE.CLOSE_BRACKET) {
+						// Check if the current token is not a close paren
+						if(current_token.type != TOKENTYPE.CLOSE_PAREN) {
 							var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
-							_error.missing_char_error("]");
+							_error.missing_char_error(")");
 							return _error;
 						}
 						advance();
 					}
-					else {
-						var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
-						_error.missing_char_error("]");
-						return _error;
-					}
+					advance();
+					return new parse_node_call(_identifier, _parameters);
 				}
-				return new parse_node_variable(_return_token.value, _index);
+				else if(_return_token.type == TOKENTYPE.VARIABLE) { // Checking for a variable refrence
+					// Checking for the index if this is a variable array
+					var _index = -1;
+					if(current_token.type == TOKENTYPE.OPEN_BRACKET) {
+						if(advance()) {
+							var _index_expression = expression();
+							if(is_error(_index_expression)) return _index_expression;
+							_index = _index_expression;
+							
+							if(current_token.type != TOKENTYPE.CLOSE_BRACKET) {
+								var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+								_error.missing_char_error("]");
+								return _error;
+							}
+							advance();
+						}
+						else {
+							var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+							_error.missing_char_error("]");
+							return _error;
+						}
+					}
+					return new parse_node_variable(_return_token.value, _index);
+				}
+				else {
+					var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+					_error.missing_char_error("(");
+					return _error;
+				}
 				break;
 			
 			case TOKENTYPE.IF:
@@ -822,6 +943,10 @@ function parser(_tokens) constructor {
 			
 			case TOKENTYPE.OPEN_BRACKET:
 				return list_statement();
+				break;
+			
+			case TOKENTYPE.FUNC:
+				return func_statement();
 				break;
 			
 			default:
@@ -924,9 +1049,7 @@ function parser(_tokens) constructor {
 	function statements() {
 		var _statements = [];
 		
-		while(current_token.type == TOKENTYPE.NEW_LINE) {
-			if(!advance()) break;
-		}
+		remove_newlines();
 		
 		var _first_statement = expression();
 		if(is_error(_first_statement)) return _first_statement;
@@ -1097,7 +1220,7 @@ function interpreter() constructor {
 				var _return_result = current_scope.get_value(_node.variable_name);
 				if(is_undefined(_return_result)) {
 					var _error = new error(ERRORTYPE.RUN_TIME, -1);
-					_error.msg = _node.variable_name + " is undefined in the current scope."
+					_error.msg = _node.variable_name + " is undefined in the current scope"
 					return _error;
 				}
 				
@@ -1231,6 +1354,62 @@ function interpreter() constructor {
 					_return_list = array_append(_return_list, _list_item_result);
 				}
 				return _return_list;
+			
+			case "Func":
+				current_scope.set_value(
+					_node.variable_name,
+					{
+						node: _node,
+						func: function(_arguments, _node, _scope, _get_result) {
+							// Check if there are enough arguments
+							if(array_length(_arguments) < array_length(_node.arguments)) {
+								var _error = new error(ERRORTYPE.RUN_TIME, -1);
+								_error.msg = "More arguments expected";
+								return _error;
+							}
+							
+							// Setting all the arguments in the scope
+							for(var i = 0 ; i < array_length(_node.arguments); i++) {
+								_scope.set_value(_node.arguments[i], _arguments[i], false);
+							}
+							
+							// Calling the body of the function
+							return _get_result(_node.body);
+						}
+					},
+					true
+				);
+				break;
+			
+			case "Call":
+				var _call_method_function = current_scope.get_value(_node.identifier);
+				
+				// Check if it is defined
+				if(is_undefined(_call_method_function)) {
+					var _error = new error(ERRORTYPE.RUN_TIME, -1);
+					_error.msg = _node.identifier + " is undefined in the current scope";
+					return _error;
+				}				
+				
+				// Check if it is a method or function
+				if(!is_struct(_call_method_function)) {
+					var _error = new error(ERRORTYPE.RUN_TIME, -1);
+					_error.msg = _node.identifier + " is not a method or function";
+					return _error;
+				}
+				
+				// Get the arguments
+				var _arguments = [];
+				for(var i = 0; i < array_length(_node.arguments); i++) {
+					var _arg = get_result(_node.arguments[i]);
+					if(is_error(_arg)) return _arg;
+					_arguments = array_append(_arguments, _arg);
+				}
+				
+				add_scope_layer();
+				return _call_method_function.func(_arguments, _call_method_function.node, current_scope, get_result);
+				remove_scope_layer();
+				break;
 			
 			default: // If there is no return condition for this node, then return an error
 				var _error = new error(ERRORTYPE.RUN_TIME, -1);
