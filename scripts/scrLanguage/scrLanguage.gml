@@ -53,6 +53,8 @@ enum TOKENTYPE {
 	STRING,
 	COMMA,
 	METHOD,
+	FUNC,
+	RETURN,
 	ASSIGN,
 	NEW_LINE,
 	ADD,
@@ -77,8 +79,8 @@ enum TOKENTYPE {
 	ELSE,
 	LOOP,
 	FOR,
+	BREAK,
 	IN,
-	FUNC,
 	AND,
 	OR,
 	NOT,
@@ -92,6 +94,8 @@ global.token_names = [
 	"String",
 	"Comma",
 	"Method",
+	"Function",
+	"Return",
 	"Assign",
 	"New line",
 	"Add",
@@ -116,8 +120,8 @@ global.token_names = [
 	"Else",
 	"Loop",
 	"For",
+	"Break",
 	"In",
-	"Function",
 	"And",
 	"Or",
 	"Not",
@@ -217,8 +221,10 @@ function get_tokens(_code) {
 					case "else": _tokens = array_append(_tokens, new token(TOKENTYPE.ELSE, _symbol, _symbol_start, _peek_index)); break;
 					case "loop": _tokens = array_append(_tokens, new token(TOKENTYPE.LOOP, _symbol, _symbol_start, _peek_index)); break;
 					case "for": _tokens = array_append(_tokens, new token(TOKENTYPE.FOR, _symbol, _symbol_start, _peek_index)); break;
+					case "break": _tokens = array_append(_tokens, new token(TOKENTYPE.BREAK, _symbol, _symbol_start, _peek_index)); break;
 					case "in": _tokens = array_append(_tokens, new token(TOKENTYPE.IN, _symbol, _symbol_start, _peek_index)); break;
 					case "func": _tokens = array_append(_tokens, new token(TOKENTYPE.FUNC, _symbol, _symbol_start, _peek_index)); break;
+					case "return": _tokens = array_append(_tokens, new token(TOKENTYPE.RETURN, _symbol, _symbol_start, _peek_index)); break;
 					case "true": _tokens = array_append(_tokens, new token(TOKENTYPE.NUMBER, true, _symbol_start, _peek_index)); break;
 					case "false": _tokens = array_append(_tokens, new token(TOKENTYPE.NUMBER, false, _symbol_start, _peek_index)); break;
 					case "and": _tokens = array_append(_tokens, new token(TOKENTYPE.AND, _symbol, _symbol_start, _peek_index)); break;
@@ -444,6 +450,8 @@ function parse_node_loop(_count_expression, _body) constructor {
 	node_name = "Loop";
 	count_expression = _count_expression;
 	body = _body;
+	
+	break_out = false;
 }
 
 function parse_node_for(_variable_name, _list_expression, _body) constructor {
@@ -451,11 +459,14 @@ function parse_node_for(_variable_name, _list_expression, _body) constructor {
 	variable_name = _variable_name;
 	list_expression = _list_expression;
 	body = _body;
+	
+	break_out = false;
 }
 
 function parse_node_list(_expression_list) constructor {
 	node_name = "List";
 	expression_list = _expression_list;
+	list_stop = false;
 }
 
 function parse_node_func(_variable_name, _arguments, _body) constructor {
@@ -469,6 +480,16 @@ function parse_node_call(_identifier, _arguments) constructor {
 	node_name = "Call";
 	identifier = _identifier;
 	arguments = _arguments;
+	return_value = undefined;
+}
+
+function parse_node_return(_expression) constructor {
+	node_name = "Return";
+	expression = _expression;
+}
+
+function parse_node_break() constructor {
+	node_name = "Break";
 }
 
 #endregion
@@ -895,7 +916,6 @@ function parser(_tokens) constructor {
 						}
 						advance();
 					}
-					advance();
 					return new parse_node_call(_identifier, _parameters);
 				}
 				else if(_return_token.type == TOKENTYPE.VARIABLE) { // Checking for a variable refrence
@@ -948,7 +968,7 @@ function parser(_tokens) constructor {
 			case TOKENTYPE.FUNC:
 				return func_statement();
 				break;
-			
+	
 			default:
 				var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
 				_error.msg = "Expected float, int, variable, '+', '-', or '('";
@@ -997,7 +1017,22 @@ function parser(_tokens) constructor {
 	
 	function expression() {
 		peek(1);
-		if(current_token.type == TOKENTYPE.VARIABLE && (peek_token.type == TOKENTYPE.ASSIGN || peek_token.type == TOKENTYPE.OPEN_BRACKET)) {
+		if(current_token.type == TOKENTYPE.RETURN) {
+			if(!advance()) {
+				var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
+				_error.msg = "Expression expected"
+				return _error;
+			}
+				
+			var _expression = expression();
+			if(is_error(_expression)) return _expression;
+				
+			return new parse_node_return(_expression);
+		}		
+		else if(current_token.type == TOKENTYPE.BREAK) {
+			return new parse_node_break();
+		}
+		else if(current_token.type == TOKENTYPE.VARIABLE && (peek_token.type == TOKENTYPE.ASSIGN || peek_token.type == TOKENTYPE.OPEN_BRACKET)) {
 			var _variable_name = current_token.value;
 			var _index = -1;
 			var _assignment_statement = true;
@@ -1149,7 +1184,7 @@ function interpreter() constructor {
 			if(is_error(_AST)) show_debug_message(_AST.get_error());
 			else {
 				add_scope_layer();
-				var _run_result = get_result(_AST);
+				var _run_result = get_result(_AST, -1);
 				if(is_error(_run_result)) show_debug_message(_run_result.get_error());
 				else show_debug_message(_run_result);
 				while(is_struct(current_scope)) remove_scope_layer();
@@ -1157,12 +1192,14 @@ function interpreter() constructor {
 		}
 	}
 	
-	function get_result(_node) {
+	function get_result(_node, _parent) {
 		// Checks to see if this is a node
 		// If it is not, returns an error
 		if(!is_struct(_node) || !variable_struct_exists(_node, "node_name")) {
 			return undefined;
 		}
+		
+		_node.parent_node = _parent;
 		
 		// Find return condition based on the name of the node
 		switch(_node.node_name) {
@@ -1175,8 +1212,8 @@ function interpreter() constructor {
 				break;
 			
 			case "Binary operation":
-				var _left_result = get_result(_node.left);
-				var _right_result = get_result(_node.right);
+				var _left_result = get_result(_node.left, _node);
+				var _right_result = get_result(_node.right, _node);
 				if(is_error(_left_result)) return _left_result;
 				if(is_error(_right_result)) return _right_result;
 				
@@ -1209,7 +1246,7 @@ function interpreter() constructor {
 				break;
 			
 			case "Unary operation":
-				var _return_result = get_result(_node.node);
+				var _return_result = get_result(_node.node, _node);
 				if(!is_error(_return_result) && _node.operation == TOKENTYPE.SUBTRACT) {
 					_return_result *= -1;
 				}
@@ -1225,7 +1262,7 @@ function interpreter() constructor {
 				}
 				
 				if(_node.index != -1) {
-					var _index_value = get_result(_node.index);
+					var _index_value = get_result(_node.index, _node);
 					if(is_error(_index_value)) return _index_value;
 					
 					if(is_real(_index_value)) _index_value = floor(_index_value);
@@ -1251,13 +1288,13 @@ function interpreter() constructor {
 				break;
 			
 			case "Assignment":
-				var _return_result = get_result(_node.value);
+				var _return_result = get_result(_node.value, _node);
 				if(is_error(_return_result)) return _return_result;
 				
 				if(_node.index != -1) {
 					var _variable = current_scope.get_value(_node.variable_name);
 					if(is_array(_variable)) {
-						var _index = get_result(_node.index);
+						var _index = get_result(_node.index, _node);
 						if(is_error(_index)) return _index;
 						
 						if(is_real(_index)) _index = floor(_index);
@@ -1287,17 +1324,17 @@ function interpreter() constructor {
 				for(var i = 0; i < array_length(_node.cases); i++) {
 					var _case = _node.cases[i];
 					
-					var _cond_result = get_result(_case.condition);
+					var _cond_result = get_result(_case.condition, _node);
 					if(is_error(_cond_result)) return _cond_result;
 					
 					if(_cond_result) {
-						var _result = get_result(_case.statements)
+						var _result = get_result(_case.statements, _node);
 						remove_scope_layer();
 						return _result;
 					}
 				}
 				if(!is_undefined(_node.else_case)) {
-					var _result = get_result(_node.else_case)
+					var _result = get_result(_node.else_case, _node);
 					remove_scope_layer();
 					return _result;
 				}
@@ -1306,7 +1343,7 @@ function interpreter() constructor {
 			
 			case "Loop":
 				add_scope_layer();
-				var _count = get_result(_node.count_expression);
+				var _count = get_result(_node.count_expression, _node);
 				if(is_error(_count)) return _count;
 				
 				// Check if count is a number
@@ -1318,16 +1355,17 @@ function interpreter() constructor {
 				}
 				
 				for(var i = 0; i < _count; i++) {
-					var _body = get_result(_node.body);
-					if(is_error(_body) || i == _count-1) {
+					var _body = get_result(_node.body, _node);
+					if(is_error(_body) || i == _count-1 || _node.break_out) {
 						remove_scope_layer();
+						_node.break_out = false;
 						return _body;
 					}
 				}
 			
 			case "For":
 				add_scope_layer();
-				var _list_expression_result = get_result(_node.list_expression);
+				var _list_expression_result = get_result(_node.list_expression, _node);
 				if(is_error(_list_expression_result)) return _list_expression_result;
 				
 				if(!is_array(_list_expression_result)) {
@@ -1338,9 +1376,10 @@ function interpreter() constructor {
 				
 				for(var i = 0; i < array_length(_list_expression_result); i++) {
 					current_scope.set_value(_node.variable_name, _list_expression_result[i], false);
-					var _body_result = get_result(_node.body);
-					if(is_error(_body_result) || i == array_length(_list_expression_result)-1) {
+					var _body_result = get_result(_node.body, _node);
+					if(is_error(_body_result) || i == array_length(_list_expression_result)-1 || _node.break_out) {
 						remove_scope_layer();
+						_node.break_out = false;
 						return _body_result;
 					}
 				}
@@ -1349,9 +1388,13 @@ function interpreter() constructor {
 			case "List":
 				var _return_list = [];
 				for(var i = 0; i < array_length(_node.expression_list); i++) {
-					var _list_item_result = get_result(_node.expression_list[i]);
+					var _list_item_result = get_result(_node.expression_list[i], _node);
 					if(is_error(_list_item_result)) return _list_item_result;
 					_return_list = array_append(_return_list, _list_item_result);
+					if(_node.list_stop) {
+						_node.list_stop = false;
+						break;
+					}
 				}
 				return _return_list;
 			
@@ -1360,21 +1403,21 @@ function interpreter() constructor {
 					_node.variable_name,
 					{
 						node: _node,
-						func: function(_arguments, _node, _scope, _get_result) {
+						func: function(_arguments, _parameters, _body, _scope, _get_result, _call) {
 							// Check if there are enough arguments
-							if(array_length(_arguments) < array_length(_node.arguments)) {
+							if(array_length(_arguments) < array_length(_parameters)) {
 								var _error = new error(ERRORTYPE.RUN_TIME, -1);
 								_error.msg = "More arguments expected";
 								return _error;
 							}
 							
 							// Setting all the arguments in the scope
-							for(var i = 0 ; i < array_length(_node.arguments); i++) {
-								_scope.set_value(_node.arguments[i], _arguments[i], false);
+							for(var i = 0 ; i < array_length(_parameters); i++) {
+								_scope.set_value(_parameters[i], _arguments[i], false);
 							}
 							
 							// Calling the body of the function
-							return _get_result(_node.body);
+							return _get_result(_body, _call);
 						}
 					},
 					true
@@ -1401,14 +1444,67 @@ function interpreter() constructor {
 				// Get the arguments
 				var _arguments = [];
 				for(var i = 0; i < array_length(_node.arguments); i++) {
-					var _arg = get_result(_node.arguments[i]);
+					var _arg = get_result(_node.arguments[i], _node);
 					if(is_error(_arg)) return _arg;
 					_arguments = array_append(_arguments, _arg);
 				}
 				
 				add_scope_layer();
-				return _call_method_function.func(_arguments, _call_method_function.node, current_scope, get_result);
+				_call_method_function.func(_arguments, _call_method_function.node.arguments, _call_method_function.node.body, current_scope, get_result, _node);
 				remove_scope_layer();
+				
+				var _return = _node.return_value
+				_node.return_value = undefined;
+				return _return;
+				break;
+			
+			case "Return":
+				// Climb up the parent tree and stop any lists
+				// Look for a function call
+				var _call_found = false;
+				var _tree = _parent;
+				while(is_struct(_tree)) {
+					if(_tree.node_name == "List") {
+						_tree.list_stop = true;
+					}
+					else if(_tree.node_name == "Call") {
+						var _result = get_result(_node.expression);
+						if(is_error(_result)) return _result;
+						
+						_tree.return_value = _result;
+						_call_found = true;
+						break;
+					}
+					_tree = _tree.parent_node;
+				}
+				if(!_call_found) {
+					var _error = new error(ERRORTYPE.RUN_TIME, -1);
+					_error.msg = "Could not find a function to return";
+					return _error;
+				}
+				break;	
+			
+			case "Break":
+				// Climb up the parent tree and stop any lists
+				// Look for a loop
+				var _loop_found = false;
+				var _tree = _parent;
+				while(is_struct(_tree)) {
+					if(_tree.node_name == "List") {
+						_tree.list_stop = true;
+					}
+					else if(_tree.node_name == "Loop" || _tree.node_name == "For") {
+						_tree.break_out = true;
+						_loop_found = true;
+						break;
+					}
+					_tree = _tree.parent_node;
+				}
+				if(!_loop_found) {
+					var _error = new error(ERRORTYPE.RUN_TIME, -1);
+					_error.msg = "Could not find anything to break out of";
+					return _error;
+				}
 				break;
 			
 			default: // If there is no return condition for this node, then return an error
