@@ -1218,12 +1218,51 @@ function interpreter() constructor {
 				if(is_error(_right_result)) return _right_result;
 				
 				switch(_node.operation) {
-					case TOKENTYPE.ADD: 			return _left_result + _right_result; break;
-					case TOKENTYPE.SUBTRACT:		return _left_result - _right_result; break;
-					case TOKENTYPE.MULT:			return _left_result*_right_result; break;
-					case TOKENTYPE.POWER:			return power(_left_result, _right_result); break;
+					case TOKENTYPE.ADD: 			
+						if(is_string(_left_result)) {
+							_right_result = string(_right_result);
+						}
+						else if(is_string(_right_result)) {
+							_left_result = string(_left_result);
+						}
+						else if(!is_real(_left_result) || !is_real(_right_result)) {
+							var _error = new error(ERRORTYPE.RUN_TIME, -1);
+							_error.msg = "Invalid type";
+							return _error;
+							
+						}
+						return _left_result + _right_result; break;
+					case TOKENTYPE.SUBTRACT:
+						if(!is_real(_right_result) || !is_real(_left_result)) {
+							var _error = new error(ERRORTYPE.RUN_TIME, -1);
+							_error.msg = "Invalid type";
+							return _error;
+						}
+						return _left_result - _right_result; break;
+					case TOKENTYPE.MULT:			
+						if(!is_real(_right_result) || !is_real(_left_result)) {
+							var _error = new error(ERRORTYPE.RUN_TIME, -1);
+							_error.msg = "Invalid type";
+							return _error;
+						}
+						return _left_result*_right_result; 
+						break;
+					case TOKENTYPE.POWER:			
+						if(!is_real(_right_result) || !is_real(_left_result)) {
+							var _error = new error(ERRORTYPE.RUN_TIME, -1);
+							_error.msg = "Invalid type";
+							return _error;
+						}
+						return power(_left_result, _right_result); 
+						break;
 					case TOKENTYPE.MOD:
 					case TOKENTYPE.DIVIDE:
+						if(!is_real(_right_result) || !is_real(_left_result)) {
+							var _error = new error(ERRORTYPE.RUN_TIME, -1);
+							_error.msg = "Invalid type";
+							return _error;
+						}
+					
 						if(_right_result == 0) {
 							var _error = new error(ERRORTYPE.RUN_TIME, -1);
 							_error.msg = "Attempted to divide by 0";
@@ -1247,8 +1286,22 @@ function interpreter() constructor {
 			
 			case "Unary operation":
 				var _return_result = get_result(_node.node, _node);
-				if(!is_error(_return_result) && _node.operation == TOKENTYPE.SUBTRACT) {
-					_return_result *= -1;
+				if(!is_error(_return_result)) {
+					if(!is_real(_return_result)) {
+						var _error = new error(ERRORTYPE.RUN_TIME, -1);
+						_error.msg = "Invalid type"
+						return _error;
+					}
+					
+					switch(_node.operation) {
+						case TOKENTYPE.SUBTRACT:
+							_return_result *= -1;
+							break;
+						
+						case TOKENTYPE.NOT:
+							_return_result = !_return_result;
+							break;
+					}
 				}
 				return _return_result;
 				break;

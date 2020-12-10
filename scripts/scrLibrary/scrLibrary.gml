@@ -29,13 +29,6 @@ global.standard_library.add_method(
 	[["Number", ARGUMENTTYPE.NUMBER]]
 );
 global.standard_library.add_method(
-	"pow",
-	function(_base, _exponent) {
-		return power(_base, _exponent);
-	},
-	[["Base", ARGUMENTTYPE.NUMBER], ["Exponent", ARGUMENTTYPE.NUMBER]]
-);
-global.standard_library.add_method(
 	"sign",
 	function(_number) {
 		return sign(_number);
