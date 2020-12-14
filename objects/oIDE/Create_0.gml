@@ -133,7 +133,7 @@ for(var i = 0; i < array_length(valid_characters); i++) {
 }
 #endregion
 
-window_draw_function = function window_draw_ide() {
+window_draw_function = function() {
 	// drawing the window
 	draw_set_color(c_black);
 	draw_rectangle(0, 0, window_width, window_height, false);

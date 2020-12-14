@@ -2,16 +2,21 @@
   "resources": [
     {"id":{"name":"scrLanguage","path":"scripts/scrLanguage/scrLanguage.yy",},"order":0,},
     {"id":{"name":"scrArray","path":"scripts/scrArray/scrArray.yy",},"order":14,},
+    {"id":{"name":"scrUser_interface","path":"scripts/scrUser_interface/scrUser_interface.yy",},"order":1,},
     {"id":{"name":"GrammerRules","path":"notes/GrammerRules/GrammerRules.yy",},"order":1,},
     {"id":{"name":"scrLibrary","path":"scripts/scrLibrary/scrLibrary.yy",},"order":2,},
+    {"id":{"name":"rmUser_interface_testing","path":"rooms/rmUser_interface_testing/rmUser_interface_testing.yy",},"order":2,},
     {"id":{"name":"oIDE","path":"objects/oIDE/oIDE.yy",},"order":12,},
     {"id":{"name":"scrString","path":"scripts/scrString/scrString.yy",},"order":13,},
+    {"id":{"name":"oTest_menu","path":"objects/oTest_menu/oTest_menu.yy",},"order":23,},
     {"id":{"name":"oGrid","path":"objects/oGrid/oGrid.yy",},"order":18,},
     {"id":{"name":"oInit","path":"objects/oInit/oInit.yy",},"order":1,},
     {"id":{"name":"oWindow","path":"objects/oWindow/oWindow.yy",},"order":0,},
     {"id":{"name":"Room1","path":"rooms/Room1/Room1.yy",},"order":0,},
     {"id":{"name":"rmInit","path":"rooms/rmInit/rmInit.yy",},"order":0,},
-    {"id":{"name":"oWindow_manager","path":"objects/oWindow_manager/oWindow_manager.yy",},"order":1,},
+    {"id":{"name":"oUser_interface","path":"objects/oUser_interface/oUser_interface.yy",},"order":0,},
+    {"id":{"name":"oRender","path":"objects/oRender/oRender.yy",},"order":21,},
+    {"id":{"name":"oTerminal","path":"objects/oTerminal/oTerminal.yy",},"order":1,},
   ],
   "Options": [
     {"name":"HTML5","path":"options/html5/options_html5.yy",},
@@ -29,6 +34,7 @@
   },
   "RoomOrderNodes": [
     {"roomId":{"name":"rmInit","path":"rooms/rmInit/rmInit.yy",},},
+    {"roomId":{"name":"rmUser_interface_testing","path":"rooms/rmUser_interface_testing/rmUser_interface_testing.yy",},},
     {"roomId":{"name":"Room1","path":"rooms/Room1/Room1.yy",},},
   ],
   "Folders": [
@@ -36,6 +42,7 @@
     {"folderPath":"folders/Init.yy","order":17,"resourceVersion":"1.0","name":"Init","tags":[],"resourceType":"GMFolder",},
     {"folderPath":"folders/Windows.yy","order":5,"resourceVersion":"1.0","name":"Windows","tags":[],"resourceType":"GMFolder",},
     {"folderPath":"folders/Language.yy","order":20,"resourceVersion":"1.0","name":"Language","tags":[],"resourceType":"GMFolder",},
+    {"folderPath":"folders/User Interface.yy","order":22,"resourceVersion":"1.0","name":"User Interface","tags":[],"resourceType":"GMFolder",},
   ],
   "AudioGroups": [
     {"targets":461609314234257646,"resourceVersion":"1.0","name":"audiogroup_default","resourceType":"GMAudioGroup",},
