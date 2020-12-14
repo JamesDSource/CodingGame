@@ -1,5 +1,6 @@
 {
   "resources": [
+    {"id":{"name":"scrRectangle","path":"scripts/scrRectangle/scrRectangle.yy",},"order":24,},
     {"id":{"name":"scrLanguage","path":"scripts/scrLanguage/scrLanguage.yy",},"order":0,},
     {"id":{"name":"scrArray","path":"scripts/scrArray/scrArray.yy",},"order":14,},
     {"id":{"name":"scrUser_interface","path":"scripts/scrUser_interface/scrUser_interface.yy",},"order":1,},
