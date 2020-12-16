@@ -6,7 +6,6 @@ text_editing_last = text_editing;
 seperated_text = [];
 parsed_commands = [];
 
-// functions
 surface = -1;
 left_margin = 30;
 top_margin = 30;
@@ -51,87 +50,7 @@ function move_cursor(horizontal, verticle) {
 }
 move_cursor(0, 0);
 #endregion
-#region Key characters
-key_hold_time = 40;
-key_hold_acceleration = 2;
-function character(_code, _uppercase, _lowercase) constructor {
-	if(_uppercase == "" && _lowercase != "") uppercase = string_upper(_lowercase);
-	else uppercase = _uppercase;
-	
-	if(_lowercase == "" && _uppercase != "") lowercase = _uppercase;
-	else lowercase = _lowercase;
-	
-	if(_code == -1) keycode = ord(uppercase);
-	else keycode = _code;
-	
-	key_hold_timer = 0;
-	key_hold_subtract = 0;
-}
 
-
-valid_characters = [
-	new character(-1, "", "a"),
-	new character(-1, "", "b"),
-	new character(-1, "", "c"),
-	new character(-1, "", "d"),
-	new character(-1, "", "e"),
-	new character(-1, "", "f"),
-	new character(-1, "", "g"),
-	new character(-1, "", "h"),
-	new character(-1, "", "i"),
-	new character(-1, "", "j"),
-	new character(-1, "", "k"),
-	new character(-1, "", "l"),
-	new character(-1, "", "m"),
-	new character(-1, "", "n"),
-	new character(-1, "", "o"),
-	new character(-1, "", "p"),
-	new character(-1, "", "q"),
-	new character(-1, "", "r"),
-	new character(-1, "", "s"),
-	new character(-1, "", "t"),
-	new character(-1, "", "u"),
-	new character(-1, "", "v"),
-	new character(-1, "", "w"),
-	new character(-1, "", "x"),
-	new character(-1, "", "y"),
-	new character(-1, "", "z"),
-	new character(ord("1"), "!", "1"),
-	new character(ord("2"), "@", "2"),
-	new character(ord("3"), "#", "3"),
-	new character(ord("4"), "$", "4"),
-	new character(ord("5"), "%", "5"),
-	new character(ord("6"), "^", "6"),
-	new character(ord("7"), "&", "7"),
-	new character(ord("8"), "*", "8"),
-	new character(ord("9"), "(", "9"),
-	new character(ord("0"), ")", "0"),
-	new character(vk_space, " ", " "),
-	new character(vk_enter, "\n", ""),
-	new character(vk_tab, "\t", ""),
-	new character(vk_backspace, "", ""),
-	new character(vk_delete, "", ""),
-	new character(vk_left, "", ""),
-	new character(vk_right, "", ""),
-	new character(vk_up, "", ""),
-	new character(vk_down, "", ""),
-	new character(219, "{", "["),
-	new character(221, "}", "]"),
-	new character(186, ":", ";"),
-	new character(222, "\"", "'"),
-	new character(187, "+", "="),
-	new character(189, "_", "-"),
-	new character(188, "<", ","),
-	new character(190, ">", "."),
-	new character(191, "?", "/")
-];
-
-for(var i = 0; i < array_length(valid_characters); i++) {
-	if(is_string(valid_characters[i])) {
-		valid_characters[i] = ord(valid_characters[i]);
-	}
-}
-#endregion
 
 window_draw_function = function() {
 	// drawing the window

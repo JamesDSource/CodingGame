@@ -1,3 +1,73 @@
+#region Key characters
+function character(_code, _uppercase, _lowercase) constructor {
+	if(_uppercase == "" && _lowercase != "") uppercase = string_upper(_lowercase);
+	else uppercase = _uppercase;
+	
+	if(_lowercase == "" && _uppercase != "") lowercase = _uppercase;
+	else lowercase = _lowercase;
+	
+	if(_code == -1) keycode = ord(uppercase);
+	else keycode = _code;
+}
+
+
+global.valid_characters = [
+	new character(-1, "", "a"),
+	new character(-1, "", "b"),
+	new character(-1, "", "c"),
+	new character(-1, "", "d"),
+	new character(-1, "", "e"),
+	new character(-1, "", "f"),
+	new character(-1, "", "g"),
+	new character(-1, "", "h"),
+	new character(-1, "", "i"),
+	new character(-1, "", "j"),
+	new character(-1, "", "k"),
+	new character(-1, "", "l"),
+	new character(-1, "", "m"),
+	new character(-1, "", "n"),
+	new character(-1, "", "o"),
+	new character(-1, "", "p"),
+	new character(-1, "", "q"),
+	new character(-1, "", "r"),
+	new character(-1, "", "s"),
+	new character(-1, "", "t"),
+	new character(-1, "", "u"),
+	new character(-1, "", "v"),
+	new character(-1, "", "w"),
+	new character(-1, "", "x"),
+	new character(-1, "", "y"),
+	new character(-1, "", "z"),
+	new character(ord("1"), "!", "1"),
+	new character(ord("2"), "@", "2"),
+	new character(ord("3"), "#", "3"),
+	new character(ord("4"), "$", "4"),
+	new character(ord("5"), "%", "5"),
+	new character(ord("6"), "^", "6"),
+	new character(ord("7"), "&", "7"),
+	new character(ord("8"), "*", "8"),
+	new character(ord("9"), "(", "9"),
+	new character(ord("0"), ")", "0"),
+	new character(vk_space, " ", " "),
+	new character(vk_enter, "\n", ""),
+	new character(vk_tab, "\t", ""),
+	new character(vk_backspace, "", ""),
+	new character(vk_delete, "", ""),
+	new character(vk_left, "", ""),
+	new character(vk_right, "", ""),
+	new character(vk_up, "", ""),
+	new character(vk_down, "", ""),
+	new character(219, "{", "["),
+	new character(221, "}", "]"),
+	new character(186, ":", ";"),
+	new character(222, "\"", "'"),
+	new character(187, "+", "="),
+	new character(189, "_", "-"),
+	new character(188, "<", ","),
+	new character(190, ">", "."),
+	new character(191, "?", "/")
+];
+#endregion
 #region Window
 function UI_window(_name, _x, _y, _width, _height) constructor {
     name = _name;
@@ -243,9 +313,40 @@ function UI_input(_element, _hovering) {
     var _is_hovering = _element == _hovering;
     
     switch(_element.element_name) {
+        case "Container":
+            for(var i = 0; i < array_length(_element.children); i++) {
+                UI_input(_element.children[i], _hovering);
+            }
+            break;
         case "Text box":
             if(mouse_check_button_pressed(mb_left)) {
-                
+                _element.text_cursor_index = _is_hovering ? string_length(_element.text)+1 : -1
+            }
+            
+            if(_element.text_cursor_index != -1) {
+                for(var i = 0; i < array_length(global.valid_characters); i++) {
+                    var _keycode = global.valid_characters[i].keycode;
+                    var _key_timer = _element.key_timers[i];
+                    
+                    if(_key_timer.time > 0) _key_timer.time -= _key_timer.subtract;
+                    if(keyboard_check_pressed(_keycode) || (keyboard_check(_keycode) && _key_timer.time <= 0)) {
+                        switch(_keycode) { 
+                            case vk_backspace:
+                                _element.text = string_delete(_element.text, _element.text_cursor_index-1, 1);
+                                _element.text_cursor_index--;
+                                break;
+                            
+                            default:
+                                var _char_add = keyboard_check(vk_shift) ? global.valid_characters[i].uppercase : global.valid_characters[i].lowercase;
+                                _element.text = string_insert(_char_add, _element.text, _element.text_cursor_index);
+                                _element.text_cursor_index++;
+                                break;
+                        }
+                        _key_timer.time = _element.key_hold_time;
+                        _key_timer.subtract += _element.key_hold_acceleration;
+                    }
+                    else if(!keyboard_check(_keycode)) _key_timer.subtract = 0;
+                }
             }
             break;
     }
@@ -323,6 +424,17 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     
     surface = -1;
     
+    key_hold_time = 40;
+    key_hold_acceleration = 3;
+    key_timers = array_create(array_length(global.valid_characters));
+    for(var i = 0; i < array_length(global.valid_characters); i++) {
+        key_timers[i] = {
+            time: 0,
+            subtract: 1
+        }
+    }
+    
     text = "";
+    text_cursor_index = -1;
 }
 #endregion

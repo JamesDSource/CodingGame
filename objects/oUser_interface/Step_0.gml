@@ -7,5 +7,5 @@ for(var i = ds_list_size(UI_windows)-1; i >= 0; i--) {
 
 // Getting the inputs for each element
 for(var i = 0; i < ds_list_size(UI_windows); i++) {
-    UI_input(UI_window[| i].tree, _element_hovering);
+    UI_input(UI_windows[| i].tree, _element_hovering);
 }
