@@ -1,10 +1,10 @@
 UI_window_create("Test");
 root = UI_find_element("Test", "");
+UI_window_resize("Test", display_get_gui_width()-10, display_get_gui_height()-10);
+UI_window_set_position("Test", 5, 5);
 
-box_test = new UI_element_box("Box1", 0.9);
-box_test.constraint.set_anchor_points(0.5, 0.5);
-root.add_child(box_test);
+textbox = new UI_element_text_box("Textbox", ELEMENTSIZINGTYPE.PERCENT, 1.0, 1.0, true, true);
+textbox.text = "This is the text in the textbox";
+root.add_child(textbox);
 
-UI_window_set_positions("Test");
-var _box = UI_find_element("Test", "Box1");
-show_debug_message(_box.rect);
+UI_window_set_element_positions("Test");

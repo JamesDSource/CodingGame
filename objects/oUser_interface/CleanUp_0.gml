@@ -1,1 +1,1 @@
-ds_map_destroy(UI_windows);
+ds_list_destroy(UI_windows);

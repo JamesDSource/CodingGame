@@ -1,1 +1,1 @@
-UI_windows = ds_map_create();
+UI_windows = ds_list_create();
