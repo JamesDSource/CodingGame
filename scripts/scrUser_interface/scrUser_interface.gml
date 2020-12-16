@@ -231,15 +231,24 @@ function UI_hovering(_element, _mouse_x, _mouse_y) {
         }
         return -1;
     }
-    else {
+    else if(_element.constraint.colliding) {
         if(_element.rect.colliding_with_point(_mouse_x, _mouse_y)) return _element;
         else return -1;
     }
+    else return -1;
 }
 
 function UI_input(_element, _hovering) {
     if(!variable_struct_exists(_element, "rect")) throw "Element does not have position";
     var _is_hovering = _element == _hovering;
+    
+    switch(_element.element_name) {
+        case "Text box":
+            if(mouse_check_button_pressed(mb_left)) {
+                
+            }
+            break;
+    }
 }
 
 // This object holds the anchor points, margins, and other positional data
