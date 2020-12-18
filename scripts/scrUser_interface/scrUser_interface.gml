@@ -261,7 +261,6 @@ function UI_draw(_element) {
     var _rect = _element.rect;
     switch(_element.element_name) {
         case "Container":
-            draw_rectangle_color(_rect.x, _rect.y, _rect.x + _rect.width, _rect.y + _rect.height, c_black, c_black, c_black, c_black, true);
             for(var i = 0; i < array_length(_element.children); i++) {
                 UI_draw(_element.children[i]);
             }
@@ -281,8 +280,29 @@ function UI_draw(_element) {
             draw_clear_alpha(c_white, 0.0);
             draw_set_halign(fa_left);
             draw_set_valign(fa_top);
+        	draw_set_font(_element.font);
             
-            draw_text(0, 0, _element.text);
+            var _text_draw_x = _element.char_seperation/2, _text_draw_y = _element.char_seperation/2;
+            for(var i = 1; i <= string_length(_element.text) + 1; i++) {
+            	if(_element.text_cursor_index == i) {
+            		draw_text(_text_draw_x - _element.char_seperation/2, _text_draw_y, "|");
+            	}
+            	
+            	if(i <= string_length(_element.text)) {
+	            	var _char = string_char_at(_element.text, i);
+	            	switch(_char) {
+	            		case "\n":
+	            			_text_draw_y += _element.line_seperation;
+	            			_text_draw_x = 0;
+	            			break;
+	            		
+	            		default:
+	            			draw_text(_text_draw_x, _text_draw_y, _char);
+	            			_text_draw_x += _element.char_seperation;
+	            			break;
+	            	}
+            	}
+            }
             
             surface_reset_target();
             
@@ -307,11 +327,9 @@ function UI_hovering(_element, _mouse_x, _mouse_y) {
     }
     else return -1;
 }
-
 function UI_input(_element, _hovering) {
     if(!variable_struct_exists(_element, "rect")) throw "Element does not have position";
     var _is_hovering = _element == _hovering;
-    
     switch(_element.element_name) {
         case "Container":
             for(var i = 0; i < array_length(_element.children); i++) {
@@ -320,7 +338,7 @@ function UI_input(_element, _hovering) {
             break;
         case "Text box":
             if(mouse_check_button_pressed(mb_left)) {
-                _element.text_cursor_index = _is_hovering ? string_length(_element.text)+1 : -1
+                _element.text_cursor_index = _is_hovering ? string_length(_element.text)+1 : -1;
             }
             
             if(_element.text_cursor_index != -1) {
@@ -330,16 +348,29 @@ function UI_input(_element, _hovering) {
                     
                     if(_key_timer.time > 0) _key_timer.time -= _key_timer.subtract;
                     if(keyboard_check_pressed(_keycode) || (keyboard_check(_keycode) && _key_timer.time <= 0)) {
-                        switch(_keycode) { 
+                        switch(_keycode) {
+                        	case vk_left:
+                        		_element.move_cursor(-1, 0);
+                        		break;
+                        	case vk_right:
+                        		_element.move_cursor(1, 0);
+                        		break;
+                        	case vk_up:
+                        		_element.move_cursor(0, -1);
+                        		break;
+                        	case vk_down:
+                        		_element.move_cursor(0, 1);
+                        		break;
+                        	
                             case vk_backspace:
                                 _element.text = string_delete(_element.text, _element.text_cursor_index-1, 1);
-                                _element.text_cursor_index--;
+                                _element.move_cursor(-1, 0);
                                 break;
                             
                             default:
                                 var _char_add = keyboard_check(vk_shift) ? global.valid_characters[i].uppercase : global.valid_characters[i].lowercase;
                                 _element.text = string_insert(_char_add, _element.text, _element.text_cursor_index);
-                                _element.text_cursor_index++;
+                                _element.move_cursor(1, 0);
                                 break;
                         }
                         _key_timer.time = _element.key_hold_time;
@@ -413,7 +444,7 @@ function UI_element_box(_name, _fill) constructor {
 
 function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeable, _spill) constructor {
     element_name = "Text box";
-    name = _name
+    name = _name;
     constraint = new UI_constraint();
     sizing_type = _sizing_type;
     h_sizing = _h_sizing;
@@ -423,6 +454,8 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     can_newline = true;
     
     surface = -1;
+    char_seperation = 12;
+    line_seperation = 22;
     
     key_hold_time = 40;
     key_hold_acceleration = 3;
@@ -434,7 +467,49 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
         }
     }
     
+    font = fCode_gintronic;
+    
     text = "";
     text_cursor_index = -1;
+    function move_cursor(_horizontal, _verticle) {
+    	if(_verticle != 0) {
+    		var _offset = offset_from_line(text_cursor_index-1) + 1;
+    		var _new_line = get_line(text_cursor_index) + _verticle;
+    		var _line_pos = get_line_position(_new_line);
+    		
+    		text_cursor_index = _line_pos;
+    		while(true) {
+    			text_cursor_index++;
+    			if(string_char_at(text, text_cursor_index) == "\n") show_debug_message("yep");
+    			if(_offset == offset_from_line(text_cursor_index) || string_char_at(text, text_cursor_index) == "\n" || text_cursor_index > string_length(text)) {
+    				break;
+    			}
+    		}
+		}
+    	
+    	text_cursor_index += _horizontal;
+    	text_cursor_index = clamp(text_cursor_index, 1, string_length(text)+1);
+    }
+    
+    function offset_from_line(_pos) {
+    	var _offset = 0;
+    	for(var i = _pos; i >= 1; i--) {
+    		if(i == 1 || string_char_at(text, i-1) == "\n") break;
+    		else _offset++;
+    	}
+    	return _offset;
+    }
+    function get_line(_pos) {
+    	var _cut_string = string_copy(text, 1, _pos-1);
+    	return string_count("\n", _cut_string);
+    }
+    
+    function get_line_position(_line) {
+		if(_line == 0) return 0;
+		
+    	var _newlines = string_pos_all("\n", text);
+    	_line = clamp(_line-1, 0, array_length(_newlines)-1);
+    	return _newlines[_line]+1;
+    }
 }
 #endregion
