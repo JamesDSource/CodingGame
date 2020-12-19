@@ -293,7 +293,7 @@ function UI_draw(_element) {
 	            	switch(_char) {
 	            		case "\n":
 	            			_text_draw_y += _element.line_seperation;
-	            			_text_draw_x = 0;
+	            			_text_draw_x = _element.char_seperation/2;
 	            			break;
 	            		
 	            		default:
@@ -473,17 +473,16 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     text_cursor_index = -1;
     function move_cursor(_horizontal, _verticle) {
     	if(_verticle != 0) {
-    		var _offset = offset_from_line(text_cursor_index-1) + 1;
+    		var _offset = offset_from_line(text_cursor_index);
     		var _new_line = get_line(text_cursor_index) + _verticle;
     		var _line_pos = get_line_position(_new_line);
     		
     		text_cursor_index = _line_pos;
     		while(true) {
-    			text_cursor_index++;
-    			if(string_char_at(text, text_cursor_index) == "\n") show_debug_message("yep");
     			if(_offset == offset_from_line(text_cursor_index) || string_char_at(text, text_cursor_index) == "\n" || text_cursor_index > string_length(text)) {
     				break;
     			}
+    			text_cursor_index++;
     		}
 		}
     	
