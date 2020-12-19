@@ -3,13 +3,13 @@ function array_append(_array, _value) {
 	return _array;
 }
 
-function array_insert(_array, _index, _value) {
+function array_slide(_array, _index, _value) {
 	var _new_array = [];
-	for(var i = 0; i <= array_length(_array); i++) {
+	for(var i = 0; i < array_length(_array); i++) {
 		if(i < _index) _new_array[i] = _array[i];
-		else if(i == _index) _new_array[i] = _value;
-		else _new_array[i] = _array[i - 1];
+		else _new_array[i + 1] = _array[i];
 	}
+	_new_array[_index] = _value;
 	return _new_array;
 }
 

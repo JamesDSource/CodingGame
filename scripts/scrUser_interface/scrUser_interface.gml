@@ -282,7 +282,7 @@ function UI_draw(_element) {
             draw_set_valign(fa_top);
         	draw_set_font(_element.font);
             
-            var _text_draw_x = _element.char_seperation/2, _text_draw_y = _element.char_seperation/2;
+            var _text_draw_x = _element.text_margin, _text_draw_y = _element.text_margin;
             for(var i = 1; i <= string_length(_element.text) + 1; i++) {
             	if(_element.text_cursor_index == i) {
             		draw_text(_text_draw_x - _element.char_seperation/2, _text_draw_y, "|");
@@ -293,7 +293,7 @@ function UI_draw(_element) {
 	            	switch(_char) {
 	            		case "\n":
 	            			_text_draw_y += _element.line_seperation;
-	            			_text_draw_x = _element.char_seperation/2;
+	            			_text_draw_x = _element.text_margin;
 	            			break;
 	            		
 	            		default:
@@ -338,7 +338,20 @@ function UI_input(_element, _hovering) {
             break;
         case "Text box":
             if(mouse_check_button_pressed(mb_left)) {
-                _element.text_cursor_index = _is_hovering ? string_length(_element.text)+1 : -1;
+            	var _max_pos = string_length(_element.text);
+            	if(_is_hovering) {
+            		var _mouse_offset = {
+            			x: device_mouse_x_to_gui(0) - (_element.rect.x + _element.text_margin),
+            			y: device_mouse_y_to_gui(0) - (_element.rect.y + _element.text_margin)
+            		}
+            		
+            		var _line_offset = _mouse_offset.x div _element.char_seperation;
+            		var _line = _mouse_offset.y div _element.line_seperation;
+            		
+            		_element.text_cursor_index = _element.get_line_position(_line);
+            		_element.add_offset_on_line(_line_offset);
+            	}
+                else _element.text_cursor_index = -1;
             }
             
             if(_element.text_cursor_index != -1) {
@@ -456,6 +469,7 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     surface = -1;
     char_seperation = 12;
     line_seperation = 22;
+    text_margin = char_seperation/2;
     
     key_hold_time = 40;
     key_hold_acceleration = 3;
@@ -478,12 +492,7 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     		var _line_pos = get_line_position(_new_line);
     		
     		text_cursor_index = _line_pos;
-    		while(true) {
-    			if(_offset == offset_from_line(text_cursor_index) || string_char_at(text, text_cursor_index) == "\n" || text_cursor_index > string_length(text)) {
-    				break;
-    			}
-    			text_cursor_index++;
-    		}
+    		add_offset_on_line(_offset);
 		}
     	
     	text_cursor_index += _horizontal;
@@ -504,11 +513,19 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     }
     
     function get_line_position(_line) {
-		if(_line == 0) return 0;
-		
     	var _newlines = string_pos_all("\n", text);
-    	_line = clamp(_line-1, 0, array_length(_newlines)-1);
+    	_newlines = array_slide(_newlines, 0, 0);
+    	_line = clamp(_line, 0, array_length(_newlines)-1);
     	return _newlines[_line]+1;
+    }
+    
+    function add_offset_on_line(_offset) {
+    	while(true) {
+    		if(_offset == offset_from_line(text_cursor_index) || string_char_at(text, text_cursor_index) == "\n" || text_cursor_index > string_length(text)) {
+    			break;
+    		}
+    		text_cursor_index++;
+    	}
     }
 }
 #endregion
