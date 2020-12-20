@@ -1,0 +1,25 @@
+Project:
+	-add GMLive
+
+UI:
+    -add buttons
+    -add nine slices
+    -add different types of sliders/toggles for options menu
+
+Text box:
+    -add mouse selection of multiple charaters
+    -add copy, cut, and paste shortcuts
+    -add a sidebar that shows the lines
+    -add a code helper mode that autofills code like GMEdit does
+    -add syntax highlighting
+    -add syntax error messages
+
+Language:
+    -add the ability for the "in" keyword to work like python
+    -add built in functions
+    -add the ability for runtime errors to know what line they're on
+
+Terminal:
+    -add the windows tab selection on the top
+    -add a button to switch between terminal and game view
+    -make it look prettier

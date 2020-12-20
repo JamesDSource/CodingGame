@@ -352,8 +352,7 @@ function UI_input(_element, _hovering) {
             		var _line_offset = _mouse_offset.x div _element.char_seperation;
             		var _line = _mouse_offset.y div _element.line_seperation;
             		
-            		_element.text_cursor_index = _element.get_line_position(_line);
-            		_element.add_offset_on_line(_line_offset);
+            		_element.text_cursor_index = _element.add_offset_on_line(_line, _line_offset);
             	}
                 else _element.text_cursor_index = -1;
             }
