@@ -6,7 +6,7 @@ function library() constructor {
 			method_call: _method_call,
 			arguments: _arguments
 		}
-		methods = array_append(methods, _new_method);
+		array_push(methods, _new_method);
 	}
 }
 

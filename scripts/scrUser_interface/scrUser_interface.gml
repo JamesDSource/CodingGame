@@ -242,7 +242,7 @@ function UI_set_positions(_element, _area_rect, _existing_rects) { // String or 
     
     // Setting the rect
     _element.rect = _return_rect;
-    if(_element.constraint.colliding) _existing_rects = array_append(_existing_rects, _return_rect);
+    if(_element.constraint.colliding) array_push(_existing_rects, _return_rect);
     
     // Getting rects for the children of containers
     if(_element.element_name == "Container") {
@@ -283,6 +283,7 @@ function UI_draw(_element) {
         	draw_set_font(_element.font);
             
             var _text_draw_x = _element.text_margin, _text_draw_y = _element.text_margin;
+            var _offset = 0;
             for(var i = 1; i <= string_length(_element.text) + 1; i++) {
             	if(_element.text_cursor_index == i) {
             		draw_text(_text_draw_x - _element.char_seperation/2, _text_draw_y, "|");
@@ -294,11 +295,13 @@ function UI_draw(_element) {
 	            		case "\n":
 	            			_text_draw_y += _element.line_seperation;
 	            			_text_draw_x = _element.text_margin;
+	            			_offset = 0;
 	            			break;
 	            		
 	            		default:
-	            			draw_text(_text_draw_x, _text_draw_y, _char);
-	            			_text_draw_x += _element.char_seperation;
+	            			draw_text(_text_draw_x, _text_draw_y, _char == "\t" ? "~":_char);
+	            			_offset += _element.get_char_offset(_char, _offset);
+	            			_text_draw_x = _element.text_margin + _offset*_element.char_seperation;
 	            			break;
 	            	}
             	}
@@ -442,7 +445,7 @@ function UI_element_container(_name) constructor {
     v_fill = 1;
     
     function add_child(_element) {
-        children = array_append(children, _element);
+        array_push(children, _element);
     }
 }
 
@@ -501,12 +504,28 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     
     function offset_from_line(_pos) {
     	var _offset = 0;
-    	for(var i = _pos; i >= 1; i--) {
-    		if(i == 1 || string_char_at(text, i-1) == "\n") break;
-    		else _offset++;
+    	var _line_pos = get_line_position(get_line(_pos));
+    	while(_line_pos < _pos) {
+    		_line_pos++;
+    		_offset += get_char_offset(string_char_at(text, _line_pos), _offset);
     	}
     	return _offset;
     }
+	
+	function get_char_offset(_char, _offset) {
+		switch(_char) {
+			case "\t":
+				var _indent_length = 4;
+				var _indent = ceil((_offset + 1)/_indent_length);
+				return _indent*_indent_length - _offset;
+				break;
+			
+			default:
+				return 1;
+				break;
+		}
+	}
+	
     function get_line(_pos) {
     	var _cut_string = string_copy(text, 1, _pos-1);
     	return string_count("\n", _cut_string);
@@ -514,7 +533,7 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     
     function get_line_position(_line) {
     	var _newlines = string_pos_all("\n", text);
-    	_newlines = array_slide(_newlines, 0, 0);
+    	array_insert(_newlines, 0, 0);
     	_line = clamp(_line, 0, array_length(_newlines)-1);
     	return _newlines[_line]+1;
     }

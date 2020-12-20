@@ -1,13 +1,13 @@
 windows = [];
 
 function add_window(_id) {
-    windows = array_append(windows, _id);
+    array_push(windows, _id);
 }
 
 function remove_window(_id) {
     var _index = array_position(window, _id);
     if(!is_undefined(_index)) {
-        windows = array_remove(windows, _index);
+        array_delete(windows, _index, 1);
         instance_destroy(_id);
     }
 }

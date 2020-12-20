@@ -216,19 +216,19 @@ function get_tokens(_code) {
 				
 				var _found_keyword = true;
 				switch(_symbol) {
-					case "if": _tokens = array_append(_tokens, new token(TOKENTYPE.IF, _symbol, _symbol_start, _peek_index)); break;
-					case "elif": _tokens = array_append(_tokens, new token(TOKENTYPE.ELIF, _symbol, _symbol_start, _peek_index)); break;
-					case "else": _tokens = array_append(_tokens, new token(TOKENTYPE.ELSE, _symbol, _symbol_start, _peek_index)); break;
-					case "loop": _tokens = array_append(_tokens, new token(TOKENTYPE.LOOP, _symbol, _symbol_start, _peek_index)); break;
-					case "for": _tokens = array_append(_tokens, new token(TOKENTYPE.FOR, _symbol, _symbol_start, _peek_index)); break;
-					case "break": _tokens = array_append(_tokens, new token(TOKENTYPE.BREAK, _symbol, _symbol_start, _peek_index)); break;
-					case "in": _tokens = array_append(_tokens, new token(TOKENTYPE.IN, _symbol, _symbol_start, _peek_index)); break;
-					case "func": _tokens = array_append(_tokens, new token(TOKENTYPE.FUNC, _symbol, _symbol_start, _peek_index)); break;
-					case "return": _tokens = array_append(_tokens, new token(TOKENTYPE.RETURN, _symbol, _symbol_start, _peek_index)); break;
-					case "true": _tokens = array_append(_tokens, new token(TOKENTYPE.NUMBER, true, _symbol_start, _peek_index)); break;
-					case "false": _tokens = array_append(_tokens, new token(TOKENTYPE.NUMBER, false, _symbol_start, _peek_index)); break;
-					case "and": _tokens = array_append(_tokens, new token(TOKENTYPE.AND, _symbol, _symbol_start, _peek_index)); break;
-					case "or": _tokens = array_append(_tokens, new token(TOKENTYPE.OR, _symbol, _symbol_start, _peek_index)); break;
+					case "if": array_push(_tokens, new token(TOKENTYPE.IF, _symbol, _symbol_start, _peek_index)); break;
+					case "elif": array_push(_tokens, new token(TOKENTYPE.ELIF, _symbol, _symbol_start, _peek_index)); break;
+					case "else": array_push(_tokens, new token(TOKENTYPE.ELSE, _symbol, _symbol_start, _peek_index)); break;
+					case "loop": array_push(_tokens, new token(TOKENTYPE.LOOP, _symbol, _symbol_start, _peek_index)); break;
+					case "for": array_push(_tokens, new token(TOKENTYPE.FOR, _symbol, _symbol_start, _peek_index)); break;
+					case "break": array_push(_tokens, new token(TOKENTYPE.BREAK, _symbol, _symbol_start, _peek_index)); break;
+					case "in": array_push(_tokens, new token(TOKENTYPE.IN, _symbol, _symbol_start, _peek_index)); break;
+					case "func": array_push(_tokens, new token(TOKENTYPE.FUNC, _symbol, _symbol_start, _peek_index)); break;
+					case "return": array_push(_tokens, new token(TOKENTYPE.RETURN, _symbol, _symbol_start, _peek_index)); break;
+					case "true": array_push(_tokens, new token(TOKENTYPE.NUMBER, true, _symbol_start, _peek_index)); break;
+					case "false": array_push(_tokens, new token(TOKENTYPE.NUMBER, false, _symbol_start, _peek_index)); break;
+					case "and": array_push(_tokens, new token(TOKENTYPE.AND, _symbol, _symbol_start, _peek_index)); break;
+					case "or": array_push(_tokens, new token(TOKENTYPE.OR, _symbol, _symbol_start, _peek_index)); break;
 					default: _found_keyword = false; break;
 				}
 				if(_found_keyword) break;
@@ -244,8 +244,8 @@ function get_tokens(_code) {
 				//	}
 				//}
 				
-				if(_function_data != -1) _tokens = array_append(_tokens, new token(TOKENTYPE.FUNCTION, _function_data, _symbol_start, _peek_index));
-				else _tokens = array_append(_tokens, new token(TOKENTYPE.VARIABLE, _symbol, _symbol_start, _peek_index));
+				if(_function_data != -1) array_push(_tokens, new token(TOKENTYPE.FUNCTION, _function_data, _symbol_start, _peek_index));
+				else array_push(_tokens, new token(TOKENTYPE.VARIABLE, _symbol, _symbol_start, _peek_index));
 				break;
 			case "0": // Numbers
 			case "1":
@@ -274,7 +274,7 @@ function get_tokens(_code) {
 				}
 				_peek_index--;
 				var _numb = string_copy(_code, i, _peek_index-i + 1);
-				_tokens = array_append(_tokens, new token(TOKENTYPE.NUMBER, real(_numb), i, _peek_index));
+				array_push(_tokens, new token(TOKENTYPE.NUMBER, real(_numb), i, _peek_index));
 				i = _peek_index;
 				break;
 			case "\"":
@@ -289,79 +289,79 @@ function get_tokens(_code) {
 					}
 				}
 				var _str = string_copy(_code, i+1, _peek_index-i-1);
-				_tokens = array_append(_tokens, new token(TOKENTYPE.STRING, _str, i, _peek_index));
+				array_push(_tokens, new token(TOKENTYPE.STRING, _str, i, _peek_index));
 				i = _peek_index;
 				break;
 			case "\n": 
 			case ";": // New line
-				_tokens = array_append(_tokens, new token(TOKENTYPE.NEW_LINE, _char, i, i+1));
+				array_push(_tokens, new token(TOKENTYPE.NEW_LINE, _char, i, i+1));
 				break;
 			case "=": // Addition and equals
 				if(i + 1 <= _text_len && string_char_at(_code, i + 1) == "=") {
-					_tokens = array_append(_tokens, new token(TOKENTYPE.EQUALS, "==", i, i+2));
+					array_push(_tokens, new token(TOKENTYPE.EQUALS, "==", i, i+2));
 					i++;	
 				}
-				else _tokens = array_append(_tokens, new token(TOKENTYPE.ASSIGN, _char, i, i+1));
+				else array_push(_tokens, new token(TOKENTYPE.ASSIGN, _char, i, i+1));
 				break;
 			case ">":
 				if(i + 1 <= _text_len && string_char_at(_code, i + 1) == "=") {
-					_tokens = array_append(_tokens, new token(TOKENTYPE.GREATER_EQUAL, ">=", i, i+2));
+					array_push(_tokens, new token(TOKENTYPE.GREATER_EQUAL, ">=", i, i+2));
 					i++;	
 				}
-				else _tokens = array_append(_tokens, new token(TOKENTYPE.GREATER, _char, i, i+1));
+				else array_push(_tokens, new token(TOKENTYPE.GREATER, _char, i, i+1));
 				break;
 			case "<":
 				if(i + 1 <= _text_len && string_char_at(_code, i + 1) == "=") {
-					_tokens = array_append(_tokens, new token(TOKENTYPE.LESSER_EQUAL, "<=", i, i+2));
+					array_push(_tokens, new token(TOKENTYPE.LESSER_EQUAL, "<=", i, i+2));
 					i++;	
 				}
-				else _tokens = array_append(_tokens, new token(TOKENTYPE.LESSER, _char, i, i+1));
+				else array_push(_tokens, new token(TOKENTYPE.LESSER, _char, i, i+1));
 				break;
 			case "+": // Addition
-				_tokens = array_append(_tokens, new token(TOKENTYPE.ADD, _char, i, i+1));
+				array_push(_tokens, new token(TOKENTYPE.ADD, _char, i, i+1));
 				break
 			case "*": // Multiplication
-				_tokens = array_append(_tokens, new token(TOKENTYPE.MULT, _char, i, i+1));
+				array_push(_tokens, new token(TOKENTYPE.MULT, _char, i, i+1));
 				break;
 			case "-": // Subtraction
-				_tokens = array_append(_tokens, new token(TOKENTYPE.SUBTRACT, _char, i, i+1));
+				array_push(_tokens, new token(TOKENTYPE.SUBTRACT, _char, i, i+1));
 				break;
 			case "%": // Mod
-				_tokens = array_append(_tokens, new token(TOKENTYPE.MOD, _char, i, i+1));
+				array_push(_tokens, new token(TOKENTYPE.MOD, _char, i, i+1));
 				break;
 			case "^": // Power
-				_tokens = array_append(_tokens, new token(TOKENTYPE.POWER, _char, i, i+1));
+				array_push(_tokens, new token(TOKENTYPE.POWER, _char, i, i+1));
 				break;
 			case "/": // Divition
-				_tokens = array_append(_tokens, new token(TOKENTYPE.DIVIDE, _char, i, i+1));
+				array_push(_tokens, new token(TOKENTYPE.DIVIDE, _char, i, i+1));
 				break;
 			case "(": // Opening parenthesis
-				_tokens = array_append(_tokens, new token(TOKENTYPE.OPEN_PAREN, _char, i, i+1));
+				array_push(_tokens, new token(TOKENTYPE.OPEN_PAREN, _char, i, i+1));
 				break;
 			case ")": // Closing parenthesis
-				_tokens = array_append(_tokens, new token(TOKENTYPE.CLOSE_PAREN, _char, i, i+1));
+				array_push(_tokens, new token(TOKENTYPE.CLOSE_PAREN, _char, i, i+1));
 				break;
 			case "{": // Opening curly brace
-				_tokens = array_append(_tokens, new token(TOKENTYPE.OPEN_CURLY, _char, i, i+1));
+				array_push(_tokens, new token(TOKENTYPE.OPEN_CURLY, _char, i, i+1));
 				break;
 			case "}": // Closing curly brace
-				_tokens = array_append(_tokens, new token(TOKENTYPE.CLOSE_CURLY, _char, i, i+1));
+				array_push(_tokens, new token(TOKENTYPE.CLOSE_CURLY, _char, i, i+1));
 				break;			
 			case "[": // Opening curly brace
-				_tokens = array_append(_tokens, new token(TOKENTYPE.OPEN_BRACKET, _char, i, i+1));
+				array_push(_tokens, new token(TOKENTYPE.OPEN_BRACKET, _char, i, i+1));
 				break;
 			case "]": // Closing curly brace
-				_tokens = array_append(_tokens, new token(TOKENTYPE.CLOSE_BRACKET, _char, i, i+1));
+				array_push(_tokens, new token(TOKENTYPE.CLOSE_BRACKET, _char, i, i+1));
 				break;
 			case ",": // Comma
-				_tokens = array_append(_tokens, new token(TOKENTYPE.COMMA, _char, i, i+1));
+				array_push(_tokens, new token(TOKENTYPE.COMMA, _char, i, i+1));
 				break;
 			case "!": // Not
 				if(i + 1 < _text_len && string_char_at(_code, i+1) == "=") {
-					_tokens = array_append(_tokens, new token(TOKENTYPE.NOT_EQUALS, "!=", i, i+2));
+					array_push(_tokens, new token(TOKENTYPE.NOT_EQUALS, "!=", i, i+2));
 					i++;
 				}
-				else _tokens = array_append(_tokens, new token(TOKENTYPE.NOT, _char, i, i+1));
+				else array_push(_tokens, new token(TOKENTYPE.NOT, _char, i, i+1));
 				break;
 		}
 	}
@@ -569,7 +569,7 @@ function parser(_tokens) constructor {
 					if(current_token.type == TOKENTYPE.OPEN_CURLY) _eq_value++;
 					else if(current_token.type == TOKENTYPE.CLOSE_CURLY) _eq_value--;
 					if(_eq_value != 0) {
-						_statement_tokens = array_append(_statement_tokens, current_token);
+						_statementarray_push(_statement_tokens, current_token);
 					}
 				}
 				
@@ -597,13 +597,13 @@ function parser(_tokens) constructor {
 		
 		var _if_condition_statements = check_for_condition_expression(true);
 		if(is_error(_if_condition_statements)) return _if_condition_statements;
-		_cases = array_append(_cases, _if_condition_statements);
+		array_push(_cases, _if_condition_statements);
 		
 		while(peek(1) && peek_token.type == TOKENTYPE.ELIF) {
 			advance();
 			var _elif_condition_statements = check_for_condition_expression(true);
 			if(is_error(_elif_condition_statements)) return _elif_condition_statements;
-			_cases = array_append(_cases, _elif_condition_statements);
+			array_push(_cases, _elif_condition_statements);
 		}		
 		
 		if(peek(1) && peek_token.type == TOKENTYPE.ELSE) {
@@ -640,7 +640,7 @@ function parser(_tokens) constructor {
 				if(current_token.type == TOKENTYPE.OPEN_CURLY) _eq_value++;
 				else if(current_token.type == TOKENTYPE.CLOSE_CURLY) _eq_value--;
 				if(_eq_value != 0) {
-					_body_tokens = array_append(_body_tokens, current_token);
+					_bodyarray_push(_body_tokens, current_token);
 				}
 			}
 			
@@ -709,7 +709,7 @@ function parser(_tokens) constructor {
 			if(current_token.type == TOKENTYPE.OPEN_CURLY) _eq_value++;
 			else if(current_token.type == TOKENTYPE.CLOSE_CURLY) _eq_value--;
 			if(_eq_value != 0) {
-				_body_tokens = array_append(_body_tokens, current_token);
+				_bodyarray_push(_body_tokens, current_token);
 			}
 		}
 		
@@ -737,7 +737,7 @@ function parser(_tokens) constructor {
 					
 					var _list_item = expression();
 					if(is_error(_list_item)) return _list_item;
-					_list = array_append(_list, _list_item);
+					array_push(_list, _list_item);
 				}
 				remove_newlines();
 				if(current_token.type != TOKENTYPE.CLOSE_BRACKET) {
@@ -801,7 +801,7 @@ function parser(_tokens) constructor {
 					_error.msg = "Expected variable";
 					return _error;
 				}
-				_parameters = array_append(_parameters, current_token.value);
+				array_push(_parameters, current_token.value);
 				advance();
 				remove_newlines();
 			}
@@ -834,7 +834,7 @@ function parser(_tokens) constructor {
 			else if(current_token.type == TOKENTYPE.CLOSE_CURLY) _eq_value--;
 			
 			if(_eq_value != 0) {
-				_body_tokens = array_append(_body_tokens, current_token);
+				array_push(_body_tokens, current_token);
 			}
 		}
 		
@@ -903,7 +903,7 @@ function parser(_tokens) constructor {
 							
 							var _expression = expression();
 							if(is_error(_expression)) return _expression;
-							_parameters = array_append(_parameters, _expression);
+							array_push(_parameters, _expression);
 							
 							remove_newlines();
 						}
@@ -1106,7 +1106,7 @@ function parser(_tokens) constructor {
 			else {
 				var _statement = expression(); 
 				if(is_error(_statement)) return _statement;
-				_statements = array_append(_statements, _statement)
+				array_push(_statements, _statement)
 			}
 		}
 		
@@ -1443,7 +1443,7 @@ function interpreter() constructor {
 				for(var i = 0; i < array_length(_node.expression_list); i++) {
 					var _list_item_result = get_result(_node.expression_list[i], _node);
 					if(is_error(_list_item_result)) return _list_item_result;
-					_return_list = array_append(_return_list, _list_item_result);
+					array_push(_return_list, _list_item_result);
 					if(_node.list_stop) {
 						_node.list_stop = false;
 						break;
@@ -1499,7 +1499,7 @@ function interpreter() constructor {
 				for(var i = 0; i < array_length(_node.arguments); i++) {
 					var _arg = get_result(_node.arguments[i], _node);
 					if(is_error(_arg)) return _arg;
-					_arguments = array_append(_arguments, _arg);
+					array_push(_arguments, _arg);
 				}
 				
 				add_scope_layer();

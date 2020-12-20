@@ -48,7 +48,7 @@ function string_from_real(_real) {
 		var _done = false;
 		var _char = string_char_at(_return_string, i);
 		switch(_char) {
-			case "0": _mark = array_append(_mark, i); break;
+			case "0": array_push(_mark, i); break;
 			default: _done = true; break;
 		}
 		if(_done == true) break;
