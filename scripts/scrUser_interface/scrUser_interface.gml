@@ -285,7 +285,7 @@ function UI_draw(_element) {
             var _text_draw_x = _element.text_margin, _text_draw_y = _element.text_margin;
             var _offset = 0;
             for(var i = 1; i <= string_length(_element.text) + 1; i++) {
-            	if(_element.text_cursor_index == i) {
+            	if(_element.selected && _element.text_cursor_index == i) {
             		draw_text(_text_draw_x - _element.char_seperation/2, _text_draw_y, "|");
             	}
             	
@@ -344,6 +344,8 @@ function UI_input(_element, _hovering) {
             if(mouse_check_button_pressed(mb_left)) {
             	var _max_pos = string_length(_element.text);
             	if(_is_hovering) {
+            		_element.selected = true;
+            	
             		var _mouse_offset = {
             			x: device_mouse_x_to_gui(0) - (_element.rect.x + _element.text_margin),
             			y: device_mouse_y_to_gui(0) - (_element.rect.y + _element.text_margin)
@@ -354,58 +356,83 @@ function UI_input(_element, _hovering) {
             		
             		_element.text_cursor_index = _element.add_offset_on_line(_line, _line_offset);
             	}
-                else _element.text_cursor_index = -1;
+                else _element.selected = false;
             }
             
-            if(_element.text_cursor_index != -1) {
+            if(_element.selected) {
                 for(var i = 0; i < array_length(global.valid_characters); i++) {
                     var _keycode = global.valid_characters[i].keycode;
                     var _key_timer = _element.key_timers[i];
                     
                     if(_key_timer.time > 0) _key_timer.time -= _key_timer.subtract;
                     if(keyboard_check_pressed(_keycode) || (keyboard_check(_keycode) && _key_timer.time <= 0)) {
-                        switch(_keycode) {
-                        	case vk_left:
-                        		_element.move_cursor(-1, 0);
-                        		break;
-                        	case vk_right:
-                        		_element.move_cursor(1, 0);
-                        		break;
-                        	case vk_up:
-                        		_element.move_cursor(0, -1);
-                        		break;
-                        	case vk_down:
-                        		_element.move_cursor(0, 1);
-                        		break;
-                        	
-                            case vk_backspace:
-                                _element.text = string_delete(_element.text, _element.text_cursor_index-1, 1);
-                                _element.move_cursor(-1, 0);
-                                break;
-                                
-                            case vk_enter:
-                            	var _add = "\n";
-                            	var _tabs = 0;
-                            	var _pos = _element.get_line_position(_element.get_line(_element.text_cursor_index));
-                            	var _char = string_char_at(_element.text, _pos);
-                            	while(_char == "\t" && _pos < _element.text_cursor_index) {
-                            		_tabs++;
-                            		_pos++;
-                            		_char = string_char_at(_element.text, _pos);
-                            	}
-                            	repeat(_tabs) _add += "\t";
-                            	
-                            	_element.text = string_insert(_add, _element.text, _element.text_cursor_index);
-                            	_element.move_cursor(1 + _tabs, 0);
-                            	break;
-                            
-                            default:
-                                var _char_add = keyboard_check(vk_shift) ? global.valid_characters[i].uppercase : global.valid_characters[i].lowercase;
-                                _element.text = string_insert(_char_add, _element.text, _element.text_cursor_index);
-                                _element.move_cursor(1, 0);
-                                break;
-                        }
-                        _key_timer.time = _element.key_hold_time;
+                    	if(keyboard_check(vk_control)) {
+                    		switch(_keycode) {
+                    			case ord("Z"): // Undo
+                    				_element.revert_state();
+                    				break;
+                    			case ord("Y"): // Redo
+                    				_element.restore_state();
+                    				break;
+                    			case ord("C"): // Copy
+                    				break;
+                    			case ord("X"): // Cut
+                    				break;
+                    			case ord("V"): // Paste
+                    				var _clipboard = clipboard_get_text();
+                    				_element.text = string_insert(_clipboard, _element.text, _element.text_cursor_index);
+	                            	_element.move_cursor(string_length(_clipboard), 0);
+	                            	_element.save_state();
+                    				break;
+                    		}
+                    	}
+                    	else {
+	                        switch(_keycode) {
+	                        	case vk_left:
+	                        		_element.move_cursor(-1, 0);
+	                        		break;
+	                        	case vk_right:
+	                        		_element.move_cursor(1, 0);
+	                        		break;
+	                        	case vk_up:
+	                        		_element.move_cursor(0, -1);
+	                        		break;
+	                        	case vk_down:
+	                        		_element.move_cursor(0, 1);
+	                        		break;
+	                        	
+	                            case vk_backspace:
+	                                _element.text = string_delete(_element.text, _element.text_cursor_index-1, 1);
+	                                _element.move_cursor(-1, 0);
+	                                _element.save_state();
+	                                break;
+	                                
+	                            case vk_enter:
+	                            	var _add = "\n";
+	                            	var _tabs = 0;
+	                            	var _pos = _element.get_line_position(_element.get_line(_element.text_cursor_index));
+	                            	var _char = string_char_at(_element.text, _pos);
+	                            	while(_char == "\t" && _pos < _element.text_cursor_index) {
+	                            		_tabs++;
+	                            		_pos++;
+	                            		_char = string_char_at(_element.text, _pos);
+	                            	}
+	                            	repeat(_tabs) _add += "\t";
+	                            	
+	                            	_element.text = string_insert(_add, _element.text, _element.text_cursor_index);
+	                            	_element.move_cursor(1 + _tabs, 0);
+	                            	_element.save_state();
+	                            	break;
+	                            
+	                            default:
+	                                var _char_add = keyboard_check(vk_shift) ? global.valid_characters[i].uppercase : global.valid_characters[i].lowercase;
+	                                _element.text = string_insert(_char_add, _element.text, _element.text_cursor_index);
+	                                _element.move_cursor(1, 0);
+	                                _element.save_state();
+	                                break;
+	                        }
+                    	}
+                    	_key_timer.time = _element.key_hold_time;
                         _key_timer.subtract += _element.key_hold_acceleration;
                     }
                     else if(!keyboard_check(_keycode)) _key_timer.subtract = 0;
@@ -484,6 +511,7 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     writeable = _writeable;
     spill = _spill;
     can_newline = true;
+    selected = false;
     
     surface = -1;
     char_seperation = 12;
@@ -503,7 +531,7 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     font = fCode_gintronic;
     
     text = "";
-    text_cursor_index = -1;
+    text_cursor_index = 1;
     function move_cursor(_horizontal, _verticle) {
     	if(_verticle != 0) {
     		var _offset = offset_from_line(text_cursor_index);
@@ -562,5 +590,39 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     	}
     	return _pos;
     }
+    
+    // Undo redo states
+    timeline = [];
+    timeline_pos = -1;
+    
+    function save_state() {
+    	if(timeline_pos < array_length(timeline)-1) {
+    		array_delete(timeline, timeline_pos+1, array_length(timeline)-timeline_pos);
+    	}
+    	array_push(timeline, {text: text, cursor_pos: text_cursor_index});
+    	timeline_pos++;
+    	
+    	var _max_states = 50;
+    	while(array_length(timeline) > _max_states) {
+    		array_delete(timeline, 0, 1);
+    	}
+    }
+    
+    function revert_state() {
+    	if(array_length(timeline) > 0) {
+    		timeline_pos = max(timeline_pos-1, 0);
+    		text = timeline[timeline_pos].text;
+    		text_cursor_index = timeline[timeline_pos].cursor_pos;
+    	}
+    }
+    
+    function restore_state() {
+    	if(array_length(timeline) > 0) {
+    		timeline_pos = min(timeline_pos+1, array_length(timeline)-1);
+    		text = timeline[timeline_pos].text;
+    		text_cursor_index = timeline[timeline_pos].cursor_pos;
+    	}
+    }
+    save_state();
 }
 #endregion

@@ -8,7 +8,7 @@ UI:
 
 Text box:
     -add mouse selection of multiple charaters
-    -add copy, cut, and paste shortcuts
+    -add copy and cut shortcuts
     -add a sidebar that shows the lines
     -add a code helper mode that autofills code like GMEdit does
     -add syntax highlighting
@@ -22,4 +22,5 @@ Language:
 Terminal:
     -add the windows tab selection on the top
     -add a button to switch between terminal and game view
+    -add output window
     -make it look prettier
