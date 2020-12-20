@@ -330,6 +330,7 @@ function UI_hovering(_element, _mouse_x, _mouse_y) {
     }
     else return -1;
 }
+
 function UI_input(_element, _hovering) {
     if(!variable_struct_exists(_element, "rect")) throw "Element does not have position";
     var _is_hovering = _element == _hovering;
@@ -382,6 +383,22 @@ function UI_input(_element, _hovering) {
                                 _element.text = string_delete(_element.text, _element.text_cursor_index-1, 1);
                                 _element.move_cursor(-1, 0);
                                 break;
+                                
+                            case vk_enter:
+                            	var _add = "\n";
+                            	var _tabs = 0;
+                            	var _pos = _element.get_line_position(_element.get_line(_element.text_cursor_index));
+                            	var _char = string_char_at(_element.text, _pos);
+                            	while(_char == "\t" && _pos < _element.text_cursor_index) {
+                            		_tabs++;
+                            		_pos++;
+                            		_char = string_char_at(_element.text, _pos);
+                            	}
+                            	repeat(_tabs) _add += "\t";
+                            	
+                            	_element.text = string_insert(_add, _element.text, _element.text_cursor_index);
+                            	_element.move_cursor(1 + _tabs, 0);
+                            	break;
                             
                             default:
                                 var _char_add = keyboard_check(vk_shift) ? global.valid_characters[i].uppercase : global.valid_characters[i].lowercase;
@@ -492,10 +509,8 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     	if(_verticle != 0) {
     		var _offset = offset_from_line(text_cursor_index);
     		var _new_line = get_line(text_cursor_index) + _verticle;
-    		var _line_pos = get_line_position(_new_line);
     		
-    		text_cursor_index = _line_pos;
-    		add_offset_on_line(_offset);
+    		text_cursor_index = add_offset_on_line(_new_line, _offset);
 		}
     	
     	text_cursor_index += _horizontal;
@@ -506,8 +521,8 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     	var _offset = 0;
     	var _line_pos = get_line_position(get_line(_pos));
     	while(_line_pos < _pos) {
-    		_line_pos++;
     		_offset += get_char_offset(string_char_at(text, _line_pos), _offset);
+    		_line_pos++;
     	}
     	return _offset;
     }
@@ -538,13 +553,15 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     	return _newlines[_line]+1;
     }
     
-    function add_offset_on_line(_offset) {
+    function add_offset_on_line(_line, _offset) {
+    	_pos = get_line_position(_line);
     	while(true) {
-    		if(_offset == offset_from_line(text_cursor_index) || string_char_at(text, text_cursor_index) == "\n" || text_cursor_index > string_length(text)) {
+    		if(_offset <= offset_from_line(_pos) || string_char_at(text, _pos) == "\n" || _pos > string_length(text)) {
     			break;
     		}
-    		text_cursor_index++;
+    		_pos++;
     	}
+    	return _pos;
     }
 }
 #endregion

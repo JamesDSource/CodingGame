@@ -5,7 +5,7 @@ function add_window(_id) {
 }
 
 function remove_window(_id) {
-    var _index = array_position(window, _id);
+    var _index = array_position(windows, _id);
     if(!is_undefined(_index)) {
         array_delete(windows, _index, 1);
         instance_destroy(_id);
