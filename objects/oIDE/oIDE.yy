@@ -23,15 +23,14 @@
   "eventList": [
     {"isDnD":false,"eventNum":0,"eventType":0,"collisionObjectId":null,"parent":{"name":"oIDE","path":"objects/oIDE/oIDE.yy",},"resourceVersion":"1.0","name":"","tags":[],"resourceType":"GMEvent",},
     {"isDnD":false,"eventNum":0,"eventType":3,"collisionObjectId":null,"parent":{"name":"oIDE","path":"objects/oIDE/oIDE.yy",},"resourceVersion":"1.0","name":"","tags":[],"resourceType":"GMEvent",},
-    {"isDnD":false,"eventNum":0,"eventType":12,"collisionObjectId":null,"parent":{"name":"oIDE","path":"objects/oIDE/oIDE.yy",},"resourceVersion":"1.0","name":"","tags":[],"resourceType":"GMEvent",},
   ],
   "properties": [],
   "overriddenProperties": [
     {"propertyId":{"name":"window_name","path":"objects/oWindow/oWindow.yy",},"objectId":{"name":"oWindow","path":"objects/oWindow/oWindow.yy",},"value":"Default IDE","resourceVersion":"1.0","name":"","tags":[],"resourceType":"GMOverriddenProperty",},
   ],
   "parent": {
-    "name": "CodingGame",
-    "path": "CodingGame.yyp",
+    "name": "Terminal",
+    "path": "folders/Terminal.yy",
   },
   "resourceVersion": "1.0",
   "name": "oIDE",

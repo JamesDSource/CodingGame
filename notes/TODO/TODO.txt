@@ -1,5 +1,6 @@
 Project:
 	-add GMLive
+	-add delta multiplier
 
 UI:
     -add buttons
@@ -7,8 +8,8 @@ UI:
     -add different types of sliders/toggles for options menu
 
 Text box:
-    -add mouse selection of multiple charaters
-    -add copy and cut shortcuts
+	-add delta to text acceleration
+    -add sliders and scrolling
     -add a sidebar that shows the lines
     -add a code helper mode that autofills code like GMEdit does
     -add syntax highlighting

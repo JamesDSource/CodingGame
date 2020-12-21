@@ -72,7 +72,8 @@ global.valid_characters = [
 function UI_window(_name, _x, _y, _width, _height) constructor {
     name = _name;
     rect = new rectangle(_x, _y, _width, _height);
-    tree = new UI_element_container("root");    
+    tree = new UI_element_container("root"); 
+    visible = true;
 }
 
 function UI_window_create(_name) {
@@ -101,7 +102,6 @@ function UI_window_find(_name) {
 
 function UI_window_resize(_name, _width, _height) {
     var _window = UI_window_find(_name);
-    
     _window.rect.width = _width;
     _window.rect.height = _height;
 }
@@ -112,18 +112,23 @@ function UI_window_set_position(_name, _x, _y) {
     _window.rect.y = _y;
 }
 
+function UI_window_set_visible(_name, _visible) {
+	var _window = UI_window_find(_name);
+	_window.visible = _visible;
+}
+
 function UI_window_set_element_positions(_name) {
     var _window = UI_window_find(_name);
     return UI_set_positions(_window.tree, _window.rect, []);
 }
 
 function UI_window_hovering(_name, _mouse_x, _mouse_y) {
-    var _window = UI_window_find(_name);;
+    var _window = UI_window_find(_name);
     return UI_hovering(_window.tree, _mouse_x, _mouse_y);
 }
 
 function UI_window_draw(_name) {
-    var _window = UI_window_find(_name);;
+    var _window = UI_window_find(_name);
     UI_draw(_window.tree);
 }
 #endregion
@@ -255,6 +260,10 @@ function UI_set_positions(_element, _area_rect, _existing_rects) { // String or 
     return _existing_rects;
 }
 
+// Draws the element based on the rect.
+// This function only works if
+// UI_set_position has been called on
+// the element before
 function UI_draw(_element) {
     if(!variable_struct_exists(_element, "rect")) throw "Element does not have position";
     
@@ -285,11 +294,14 @@ function UI_draw(_element) {
             var _text_draw_x = _element.text_margin, _text_draw_y = _element.text_margin;
             var _offset = 0;
             for(var i = 1; i <= string_length(_element.text) + 1; i++) {
+            	
+            	// Draw the cursor
             	if(_element.selected && _element.text_cursor_index == i) {
             		draw_text(_text_draw_x - _element.char_seperation/2, _text_draw_y, "|");
             	}
             	
             	if(i <= string_length(_element.text)) {
+	            	
 	            	var _char = string_char_at(_element.text, i);
 	            	switch(_char) {
 	            		case "\n":
@@ -299,9 +311,18 @@ function UI_draw(_element) {
 	            			break;
 	            		
 	            		default:
+	            			var _prev_draw_x = _text_draw_x;
+	            			
 	            			draw_text(_text_draw_x, _text_draw_y, _char == "\t" ? "~":_char);
 	            			_offset += _element.get_char_offset(_char, _offset);
 	            			_text_draw_x = _element.text_margin + _offset*_element.char_seperation;
+	            			
+	            			// Highlights the text if needed
+	            			if(between(_element.text_highlight_index, _element.text_cursor_index, true, false, i)) {
+	            				draw_set_alpha(0.5);
+	            				draw_rectangle_color(_prev_draw_x, _text_draw_y, _text_draw_x-1, _text_draw_y + _element.line_seperation, c_white, c_white, c_white, c_white, false);
+	            				draw_set_alpha(1);
+	            			}
 	            			break;
 	            	}
             	}
@@ -315,6 +336,12 @@ function UI_draw(_element) {
     
 }
 
+
+// Determins if the element is being 
+// hovered over by the mouse.
+// This function only works if
+// UI_set_position has been called on
+// the element before
 function UI_hovering(_element, _mouse_x, _mouse_y) {
     if(!variable_struct_exists(_element, "rect")) throw "Element does not have position";
     if(_element.element_name == "Container") {
@@ -331,6 +358,11 @@ function UI_hovering(_element, _mouse_x, _mouse_y) {
     else return -1;
 }
 
+
+// Takes in the input of an element.
+// This function only works if
+// UI_set_position has been called on
+// the element before
 function UI_input(_element, _hovering) {
     if(!variable_struct_exists(_element, "rect")) throw "Element does not have position";
     var _is_hovering = _element == _hovering;
@@ -341,22 +373,29 @@ function UI_input(_element, _hovering) {
             }
             break;
         case "Text box":
+        	// getting the mouse position relative to the text box
+        	var _mouse_offset = {
+				x: device_mouse_x_to_gui(0) - (_element.rect.x + _element.text_margin),
+				y: device_mouse_y_to_gui(0) - (_element.rect.y + _element.text_margin)
+			}
+			var _line_offset = _mouse_offset.x div _element.char_seperation;
+			var _line = _mouse_offset.y div _element.line_seperation;
+			
             if(mouse_check_button_pressed(mb_left)) {
-            	var _max_pos = string_length(_element.text);
-            	if(_is_hovering) {
-            		_element.selected = true;
+            	// Reset text highlighting
+            	_element.text_highlight_index = -1;
             	
-            		var _mouse_offset = {
-            			x: device_mouse_x_to_gui(0) - (_element.rect.x + _element.text_margin),
-            			y: device_mouse_y_to_gui(0) - (_element.rect.y + _element.text_margin)
-            		}
-            		
-            		var _line_offset = _mouse_offset.x div _element.char_seperation;
-            		var _line = _mouse_offset.y div _element.line_seperation;
-            		
+            	// If the text box is being clicked
+            	if(_is_hovering) {
+            		// Set the cursor to where the mouse is clicking
+            		_element.selected = true;
             		_element.text_cursor_index = _element.add_offset_on_line(_line, _line_offset);
+            		_element.text_highlight_index = _element.text_cursor_index;
             	}
                 else _element.selected = false;
+            }
+            else if(mouse_check_button(mb_left) && _element.selected) {
+            	_element.text_cursor_index = _element.add_offset_on_line(_line, _line_offset);
             }
             
             if(_element.selected) {
@@ -374,15 +413,17 @@ function UI_input(_element, _hovering) {
                     			case ord("Y"): // Redo
                     				_element.restore_state();
                     				break;
-                    			case ord("C"): // Copy
-                    				break;
                     			case ord("X"): // Cut
+                    			case ord("C"): // Copy
+                    				var _min = min(_element.text_cursor_index, _element.text_highlight_index);
+                    				var _max = max(_element.text_cursor_index, _element.text_highlight_index);
+                    				clipboard_set_text(string_copy(_element.text, _min, _max - _min));
+                    				
+                    				if(_keycode == ord("X")) _element.delete_highlighted();
                     				break;
                     			case ord("V"): // Paste
                     				var _clipboard = clipboard_get_text();
-                    				_element.text = string_insert(_clipboard, _element.text, _element.text_cursor_index);
-	                            	_element.move_cursor(string_length(_clipboard), 0);
-	                            	_element.save_state();
+                    				_element.insert_text(_clipboard);
                     				break;
                     		}
                     	}
@@ -402,8 +443,10 @@ function UI_input(_element, _hovering) {
 	                        		break;
 	                        	
 	                            case vk_backspace:
-	                                _element.text = string_delete(_element.text, _element.text_cursor_index-1, 1);
-	                                _element.move_cursor(-1, 0);
+	                            	if(!_element.delete_highlighted()) {
+		                                _element.text = string_delete(_element.text, _element.text_cursor_index-1, 1);
+		                                _element.move_cursor(-1, 0);
+	                            	}
 	                                _element.save_state();
 	                                break;
 	                                
@@ -419,16 +462,13 @@ function UI_input(_element, _hovering) {
 	                            	}
 	                            	repeat(_tabs) _add += "\t";
 	                            	
-	                            	_element.text = string_insert(_add, _element.text, _element.text_cursor_index);
-	                            	_element.move_cursor(1 + _tabs, 0);
-	                            	_element.save_state();
+	                            	
+	                            	_element.insert_text(_add);
 	                            	break;
 	                            
 	                            default:
 	                                var _char_add = keyboard_check(vk_shift) ? global.valid_characters[i].uppercase : global.valid_characters[i].lowercase;
-	                                _element.text = string_insert(_char_add, _element.text, _element.text_cursor_index);
-	                                _element.move_cursor(1, 0);
-	                                _element.save_state();
+	                                _element.insert_text(_char_add);
 	                                break;
 	                        }
                     	}
@@ -532,6 +572,33 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     
     text = "";
     text_cursor_index = 1;
+    text_highlight_index = 1;
+    
+    // Inserts text to the cursor
+    function insert_text(_text) {
+    	delete_highlighted();
+    	text = string_insert(_text, text, text_cursor_index);
+		move_cursor(string_length(_text), 0);
+		save_state();
+    }
+    
+    // Removes the part of the text that is selected
+    function delete_highlighted() {
+    	if(abs(text_cursor_index - text_highlight_index) > 0) {
+    		var _min = min(text_cursor_index, text_highlight_index);
+    		var _max = max(text_cursor_index, text_highlight_index);
+    		
+    		text = string_delete(text, _min, _max-_min);
+    		
+    		text_cursor_index = _min;
+    		text_highlight_index = _min;
+    		
+    		return true;
+    	}
+    	return false;
+    }
+    
+    // This function moves the cursor with a 2D vector
     function move_cursor(_horizontal, _verticle) {
     	if(_verticle != 0) {
     		var _offset = offset_from_line(text_cursor_index);
@@ -540,10 +607,16 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     		text_cursor_index = add_offset_on_line(_new_line, _offset);
 		}
     	
+    	
     	text_cursor_index += _horizontal;
     	text_cursor_index = clamp(text_cursor_index, 1, string_length(text)+1);
+    	if(!keyboard_check(vk_shift)) text_highlight_index = text_cursor_index;
     }
     
+    // Gets the unit offset from the start of a line
+    // an offset is given in the amount of character spaces
+    // certain characters like tabs (\t) can be more than one
+    // character space
     function offset_from_line(_pos) {
     	var _offset = 0;
     	var _line_pos = get_line_position(get_line(_pos));
@@ -554,6 +627,9 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     	return _offset;
     }
 	
+	// Get the offset of a certain character based
+	// on the current offset. Most characters will just
+	// return 1 offset.
 	function get_char_offset(_char, _offset) {
 		switch(_char) {
 			case "\t":
@@ -568,11 +644,13 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
 		}
 	}
 	
+	// Get's the line that a certain position on the text is
     function get_line(_pos) {
     	var _cut_string = string_copy(text, 1, _pos-1);
     	return string_count("\n", _cut_string);
     }
     
+    // Get's the position of the start of a line
     function get_line_position(_line) {
     	var _newlines = string_pos_all("\n", text);
     	array_insert(_newlines, 0, 0);
@@ -580,6 +658,7 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     	return _newlines[_line]+1;
     }
     
+    // returns the character postion of the offset of a certain line
     function add_offset_on_line(_line, _offset) {
     	_pos = get_line_position(_line);
     	while(true) {
@@ -595,6 +674,7 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     timeline = [];
     timeline_pos = -1;
     
+    // Saves the current state of the text to the timeline
     function save_state() {
     	if(timeline_pos < array_length(timeline)-1) {
     		array_delete(timeline, timeline_pos+1, array_length(timeline)-timeline_pos);
@@ -608,6 +688,8 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     	}
     }
     
+    // If there is a previous state in the timeline, it will revert the state
+    // of the text box to it
     function revert_state() {
     	if(array_length(timeline) > 0) {
     		timeline_pos = max(timeline_pos-1, 0);
@@ -616,6 +698,8 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     	}
     }
     
+    // If there is a state that was reverted in the timeline, it will restore
+    // the state back into the text box
     function restore_state() {
     	if(array_length(timeline) > 0) {
     		timeline_pos = min(timeline_pos+1, array_length(timeline)-1);
