@@ -205,6 +205,7 @@ function UI_set_positions(_element, _area_rect, _existing_rects) { // String or 
             _return_rect.height = _bh;
             break;        
         
+        case "Tab selection":
         case "Text box":
             if(_element.sizing_type == ELEMENTSIZINGTYPE.PERCENT) {
                 var _bw = _area_rect.width * _element.h_sizing;
@@ -216,7 +217,7 @@ function UI_set_positions(_element, _area_rect, _existing_rects) { // String or 
             }
             _return_rect.width = _bw;
             _return_rect.height = _bh;
-            break;
+            break;        
     }
     
     // For getting the position of the rectangle
@@ -280,6 +281,10 @@ function UI_draw(_element) {
             draw_rectangle_color(_rect.x, _rect.y, _rect.x + _rect.width, _rect.y + _rect.height, _col, _col, _col, _col, false);
             break;
         
+        case "Tab selection":
+        	_element.rect.draw(c_blue, false);
+        	break;
+        
         case "Text box":
             if(!surface_exists(_element.surface)) _element.surface = surface_create(_rect.width, _rect.height);
             if(surface_get_width(_element.surface) != _rect.width || surface_get_height(_element.surface) != _rect.height) surface_resize(_element.surface, _rect.width, _rect.height);
@@ -294,6 +299,7 @@ function UI_draw(_element) {
             var _text_draw_x = _element.text_margin, _text_draw_y = _element.text_margin;
             var _offset = 0;
             for(var i = 1; i <= string_length(_element.text) + 1; i++) {
+            	draw_set_color(_element.font_color);
             	
             	// Draw the cursor
             	if(_element.selected && _element.text_cursor_index == i) {
@@ -319,8 +325,9 @@ function UI_draw(_element) {
 	            			
 	            			// Highlights the text if needed
 	            			if(between(_element.text_highlight_index, _element.text_cursor_index, true, false, i)) {
-	            				draw_set_alpha(0.5);
-	            				draw_rectangle_color(_prev_draw_x, _text_draw_y, _text_draw_x-1, _text_draw_y + _element.line_seperation, c_white, c_white, c_white, c_white, false);
+	            				var _highlight_color = _element.highlight_color;
+	            				draw_set_alpha(0.7);
+	            				draw_rectangle_color(_prev_draw_x, _text_draw_y, _text_draw_x-1, _text_draw_y + _element.line_seperation-1, _highlight_color, _highlight_color , _highlight_color, _highlight_color, false);
 	            				draw_set_alpha(1);
 	            			}
 	            			break;
@@ -384,6 +391,7 @@ function UI_input(_element, _hovering) {
             if(mouse_check_button_pressed(mb_left)) {
             	// Reset text highlighting
             	_element.text_highlight_index = -1;
+            	_element.text_cursor_index = -1;
             	
             	// If the text box is being clicked
             	if(_is_hovering) {
@@ -430,22 +438,22 @@ function UI_input(_element, _hovering) {
                     	else {
 	                        switch(_keycode) {
 	                        	case vk_left:
-	                        		_element.move_cursor(-1, 0);
+	                        		_element.move_cursor(-1, 0, keyboard_check(vk_shift));
 	                        		break;
 	                        	case vk_right:
-	                        		_element.move_cursor(1, 0);
+	                        		_element.move_cursor(1, 0, keyboard_check(vk_shift));
 	                        		break;
 	                        	case vk_up:
-	                        		_element.move_cursor(0, -1);
+	                        		_element.move_cursor(0, -1, keyboard_check(vk_shift));
 	                        		break;
 	                        	case vk_down:
-	                        		_element.move_cursor(0, 1);
+	                        		_element.move_cursor(0, 1, keyboard_check(vk_shift));
 	                        		break;
 	                        	
 	                            case vk_backspace:
 	                            	if(!_element.delete_highlighted()) {
 		                                _element.text = string_delete(_element.text, _element.text_cursor_index-1, 1);
-		                                _element.move_cursor(-1, 0);
+		                                _element.move_cursor(-1, 0, false);
 	                            	}
 	                                _element.save_state();
 	                                break;
@@ -517,7 +525,6 @@ enum ELEMENTSIZINGTYPE {
 //      An element name variable
 //      A name variable
 //      A constraint object
-
 function UI_element_container(_name) constructor {
     element_name = "Container";
     name = _name;
@@ -541,7 +548,33 @@ function UI_element_box(_name, _fill) constructor {
     color = c_white;
 }
 
-function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeable, _spill) constructor {
+function UI_element_tab_selection(_name, _sprite, _text_color, _font, _sizing_type, _h_sizing, _v_sizing) constructor {
+    element_name = "Tab selection";
+    name = _name;
+    sprite = _sprite;
+    text_color = _text_color;
+    font = _font;
+    
+    button_slice = new three_slice(sprite, 0, SLICEMODE.STREATCH);
+    constraint = new UI_constraint();
+    
+    sizing_type = _sizing_type;
+    h_sizing = _h_sizing;
+    v_sizing = _v_sizing;
+    
+    buttons = [];
+    button_index_selected = -1;
+    
+    function add_button(_text, _value) {
+    	array_push(buttons, {text:_text, value:_value});
+    }
+    
+    function remove_button(_index) {
+    	array_delete(buttons, _index, 1);
+    }
+}
+
+function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _text_color, _highlight_color, _writeable, _spill) constructor {
     element_name = "Text box";
     name = _name;
     constraint = new UI_constraint();
@@ -554,8 +587,8 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     selected = false;
     
     surface = -1;
-    char_seperation = 12;
-    line_seperation = 22;
+    char_seperation = 24;
+    line_seperation = 36;
     text_margin = char_seperation/2;
     
     key_hold_time = 40;
@@ -569,6 +602,8 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     }
     
     font = fCode_gintronic;
+    font_color = _text_color;
+    highlight_color = _highlight_color;
     
     text = "";
     text_cursor_index = 1;
@@ -578,7 +613,7 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     function insert_text(_text) {
     	delete_highlighted();
     	text = string_insert(_text, text, text_cursor_index);
-		move_cursor(string_length(_text), 0);
+		move_cursor(string_length(_text), 0, false);
 		save_state();
     }
     
@@ -599,7 +634,7 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     }
     
     // This function moves the cursor with a 2D vector
-    function move_cursor(_horizontal, _verticle) {
+    function move_cursor(_horizontal, _verticle, _drag) {
     	if(_verticle != 0) {
     		var _offset = offset_from_line(text_cursor_index);
     		var _new_line = get_line(text_cursor_index) + _verticle;
@@ -610,7 +645,7 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     	
     	text_cursor_index += _horizontal;
     	text_cursor_index = clamp(text_cursor_index, 1, string_length(text)+1);
-    	if(!keyboard_check(vk_shift)) text_highlight_index = text_cursor_index;
+    	if(!_drag) text_highlight_index = text_cursor_index;
     }
     
     // Gets the unit offset from the start of a line
@@ -658,7 +693,7 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     	return _newlines[_line]+1;
     }
     
-    // returns the character postion of the offset of a certain line
+    // Returns the character postion of the offset of a certain line
     function add_offset_on_line(_line, _offset) {
     	_pos = get_line_position(_line);
     	while(true) {
@@ -682,9 +717,10 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _writeab
     	array_push(timeline, {text: text, cursor_pos: text_cursor_index});
     	timeline_pos++;
     	
-    	var _max_states = 50;
+    	var _max_states = 300;
     	while(array_length(timeline) > _max_states) {
     		array_delete(timeline, 0, 1);
+    		timeline_pos--;
     	}
     }
     
