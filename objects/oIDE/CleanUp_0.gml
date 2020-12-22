@@ -1,0 +1,1 @@
+UI_window_destroy(UI_window_name);

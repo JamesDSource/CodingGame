@@ -7,7 +7,7 @@ function three_slice(_sprite, _subimage, _slice_mode) constructor {
     sprite = _sprite;
     subimage = _subimage;
     slice_mode = _slice_mode;
-    slice_side = sprite_get_width(sprite)/3;
+    slice_size = sprite_get_width(sprite)/3;
     
     round_down = true;
     
@@ -15,30 +15,30 @@ function three_slice(_sprite, _subimage, _slice_mode) constructor {
         var _draw_x = _x;
         
         // Drawing left side
-        draw_sprite_part(sprite, subimage, 0, 0, slice_side, sprite_get_height(sprite), _draw_x, _y);
-        _draw_x += slice_side;
+        draw_sprite_part(sprite, subimage, 0, 0, slice_size, sprite_get_height(sprite), _draw_x, _y);
+        _draw_x += slice_size;
         
         // Drawing middle
-        var _mid_length = max(0, _width - slice_side*2);
+        var _mid_length = max(0, _width - slice_size*2);
         switch(slice_mode) {
             case SLICEMODE.TILE:
-                var _repeat = _mid_length/slice_side;
+                var _repeat = _mid_length/slice_size;
                 if(round_down) _repeat = floor(_repeat);
                 else _repeat = ceil(_repeat);
                 
                 repeat(_repeat) {
-                    draw_sprite_part(sprite, subimage, slice_side, 0, slice_side, sprite_get_height(sprite), _draw_x, _y);
+                    draw_sprite_part(sprite, subimage, slice_size, 0, slice_size, sprite_get_height(sprite), _draw_x, _y);
                     _draw_x += slice_side;
                 }
                 break;
             case SLICEMODE.STREATCH:
-                draw_sprite_part_ext(sprite, subimage, slice_side, 0, slice_side, sprite_get_height(sprite), _draw_x, _y, _mid_length/slice_side, 1, c_white, draw_get_alpha());
+                draw_sprite_part_ext(sprite, subimage, slice_size, 0, slice_size, sprite_get_height(sprite), _draw_x, _y, _mid_length/slice_size, 1, c_white, draw_get_alpha());
                 _draw_x += _mid_length;
                 break;
         }
         
         // Drawing right side
-        draw_sprite_part(sprite, subimage, slice_side*2, 0, slice_side, sprite_get_height(sprite), _draw_x, _y);
+        draw_sprite_part(sprite, subimage, slice_size*2, 0, slice_size, sprite_get_height(sprite), _draw_x, _y);
     }
 }
 

@@ -282,7 +282,37 @@ function UI_draw(_element) {
             break;
         
         case "Tab selection":
-        	_element.rect.draw(c_blue, false);
+        	var _tab_size = _element.get_tab_size();
+        	var _tab_draw_pos = {
+        		x: _element.rect.x,
+        		y: _element.rect.y + _element.rect.height - sprite_get_height(_element.sprite)
+        	}
+        	
+        	draw_set_halign(fa_left);
+        	draw_set_valign(fa_middle);
+        	draw_set_color(_element.text_color);
+        	draw_set_font(_element.font);
+        	for(var i = 0; i < array_length(_element.tabs); i++) {
+        		_element.tab_slice.subimage = i == _element.tab_index_selected ? 2 : (i == _element.tab_index_hovering ? 1 : 0);
+        		_element.tab_slice.draw(_tab_draw_pos.x, _tab_draw_pos.y, _tab_size);
+        		
+        		var _text = _element.tabs[i].text;
+        		var _shortened = false;
+        		while(string_width(_text) > max(0, _tab_size - _element.tab_slice.slice_size*2 - sprite_get_width(_element.x_sprite))) {
+        			_text = string_delete(_text, string_length(_text), 1);
+        			_shortened = true;
+        		}
+        		
+        		if(_shortened && string_length(_text) >= 3) {
+        			_text = string_delete(_text, string_length(_text)-2, 3);
+        			_text += "...";
+        		}
+        		
+        		draw_text(_tab_draw_pos.x + _element.tab_slice.slice_size, _tab_draw_pos.y + sprite_get_height(_element.sprite)/2, _text);
+        		draw_sprite(_element.x_sprite, _element.tab_index_hovering_x == i ? 1 : 0, _tab_draw_pos.x + _tab_size - _element.tab_slice.slice_size - sprite_get_width(_element.x_sprite), _tab_draw_pos.y + sprite_get_height(_element.sprite)/2 - sprite_get_height(_element.x_sprite)/2);
+        		_tab_draw_pos.x += _tab_size;
+        		
+        	}
         	break;
         
         case "Text box":
@@ -373,18 +403,43 @@ function UI_hovering(_element, _mouse_x, _mouse_y) {
 function UI_input(_element, _hovering) {
     if(!variable_struct_exists(_element, "rect")) throw "Element does not have position";
     var _is_hovering = _element == _hovering;
+    
     switch(_element.element_name) {
         case "Container":
             for(var i = 0; i < array_length(_element.children); i++) {
                 UI_input(_element.children[i], _hovering);
             }
             break;
+        
+        case "Tab selection":
+        	_element.tab_index_hovering = -1;
+        	_element.tab_index_hovering_x = -1;
+        	if(_is_hovering) {
+        		var _mouse_offset_x = device_mouse_x_to_gui(0) - _element.rect.x;
+        		var _tab_size = _element.get_tab_size();
+        		var _pos = _mouse_offset_x div _tab_size;
+        		
+        		if(_pos >= 0 && _pos < array_length(_element.tabs)) {
+        			_element.tab_index_hovering = _pos;
+        			
+        			// If the mouse is hovering over the X button
+        			if(_mouse_offset_x > (_pos + 1)*_tab_size - _element.tab_slice.slice_size - sprite_get_width(_element.x_sprite)) _element.tab_index_hovering_x = _pos;
+        			
+        			if(mouse_check_button_pressed(mb_left)) {
+        				if(_element.tab_index_hovering_x != -1) _element.remove_tab(_pos);
+        				else _element.tab_index_selected = _pos;
+        			}
+        		}
+        	}
+        	_element.tab_index_selected = clamp(_element.tab_index_selected, 0, max(0, array_length(_element.tabs)-1));
+        	break;
+        
         case "Text box":
         	// getting the mouse position relative to the text box
-        	var _mouse_offset = {
-				x: device_mouse_x_to_gui(0) - (_element.rect.x + _element.text_margin),
-				y: device_mouse_y_to_gui(0) - (_element.rect.y + _element.text_margin)
-			}
+        	    var _mouse_offset = {
+					x: device_mouse_x_to_gui(0) - (_element.rect.x + _element.text_margin),
+					y: device_mouse_y_to_gui(0) - (_element.rect.y + _element.text_margin)
+				}
 			var _line_offset = _mouse_offset.x div _element.char_seperation;
 			var _line = _mouse_offset.y div _element.line_seperation;
 			
@@ -548,29 +603,79 @@ function UI_element_box(_name, _fill) constructor {
     color = c_white;
 }
 
-function UI_element_tab_selection(_name, _sprite, _text_color, _font, _sizing_type, _h_sizing, _v_sizing) constructor {
+function UI_element_tab_selection(_name, _sprite, _x_sprite, _text_color, _font, _sizing_type, _h_sizing, _v_sizing) constructor {
     element_name = "Tab selection";
     name = _name;
     sprite = _sprite;
+    x_sprite = _x_sprite;
     text_color = _text_color;
     font = _font;
     
-    button_slice = new three_slice(sprite, 0, SLICEMODE.STREATCH);
+    tab_slice = new three_slice(sprite, 0, SLICEMODE.STREATCH);
     constraint = new UI_constraint();
     
     sizing_type = _sizing_type;
     h_sizing = _h_sizing;
     v_sizing = _v_sizing;
     
-    buttons = [];
-    button_index_selected = -1;
+    tabs = [];
+    tab_index_hovering = -1;
+    tab_index_selected = -1;
+    tab_index_hovering_x = -1;
+    max_tabs = 10;
     
-    function add_button(_text, _value) {
-    	array_push(buttons, {text:_text, value:_value});
+    max_tab_size = 348;
+    
+    destroy_values_on_remove = true;
+    
+    function get_selected_tab() {
+    	if(array_length(tabs) > 0) {
+    		return tabs[tab_index_selected];
+    	}
     }
     
-    function remove_button(_index) {
-    	array_delete(buttons, _index, 1);
+    function get_tab_size() {
+    	if(variable_struct_exists(self, "rect")) {
+    		var _w = rect.width;
+    		var _tab_size = _w/array_length(tabs);
+    		
+    		return min(max_tab_size, _tab_size);
+    	}
+    	else return max_tab_size;
+    }
+    
+    function add_tab(_text, _value) {
+    	if(array_length(tabs) == 0) tab_index_selected = 0;
+    	array_push(tabs, {text:_text, value:_value});
+    	
+    	// Removing all excess tabs from the end of the array
+    	// while it has more tabs than allowed
+    	while(array_length(tabs) > max_tabs) {
+    		array_delete(tabs, array_length(tabs)-1, 1);
+    	}
+    }
+    
+    function remove_tab(_index) {
+    	if(destroy_values_on_remove) {
+    		var _value = tabs[_index].value;
+    		if(is_struct(_value)) delete _value;
+    		else if(instance_exists(_value)) instance_destroy(_value);
+    	}
+    	array_delete(tabs, _index, 1);
+    }
+    
+    function remove_tabs_by_value(_value) {
+    	var _is_here = true;
+    	while(_is_here) {
+    		_is_here = false;
+    		for(var i = 0; i < array_length(tabs); i++) {
+    			if(tabs[i].value == _value) {
+    				_is_here = true;
+    				array_delete(tabs, i, 1);
+    				break;
+    			}
+    		}
+    	}
     }
 }
 

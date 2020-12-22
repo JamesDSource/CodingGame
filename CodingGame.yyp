@@ -16,6 +16,7 @@
     {"id":{"name":"oInit","path":"objects/oInit/oInit.yy",},"order":1,},
     {"id":{"name":"fCode_gintronic","path":"fonts/fCode_gintronic/fCode_gintronic.yy",},"order":4,},
     {"id":{"name":"scrSlice_boxes","path":"scripts/scrSlice_boxes/scrSlice_boxes.yy",},"order":26,},
+    {"id":{"name":"sTerminal_tab_X","path":"sprites/sTerminal_tab_X/sTerminal_tab_X.yy",},"order":4,},
     {"id":{"name":"sTerminal_tab","path":"sprites/sTerminal_tab/sTerminal_tab.yy",},"order":3,},
     {"id":{"name":"oWindow","path":"objects/oWindow/oWindow.yy",},"order":0,},
     {"id":{"name":"Room1","path":"rooms/Room1/Room1.yy",},"order":0,},

@@ -569,7 +569,7 @@ function parser(_tokens) constructor {
 					if(current_token.type == TOKENTYPE.OPEN_CURLY) _eq_value++;
 					else if(current_token.type == TOKENTYPE.CLOSE_CURLY) _eq_value--;
 					if(_eq_value != 0) {
-						_statementarray_push(_statement_tokens, current_token);
+						array_push(_statement_tokens, current_token);
 					}
 				}
 				

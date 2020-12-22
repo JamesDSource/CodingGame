@@ -1,5 +1,5 @@
-if(keyboard_check_pressed(vk_f4)) {
-	var _tokens = get_tokens(text_editing);
+if(keyboard_check_pressed(vk_f4) && selected) {
+	var _tokens = get_tokens(text_box.text);
 	for(var i = 0; i < array_length(_tokens); i++) {
 		show_debug_message(_tokens[i].token_string());
 	}
@@ -8,5 +8,4 @@ if(keyboard_check_pressed(vk_f4)) {
 	var _interpreter = new interpreter();
 	_interpreter.run(_AST);
 	show_debug_message("!-----------------!");
-	text_editing_last = text_editing;	
 }
