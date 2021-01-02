@@ -83,13 +83,15 @@ function UI_window_create(_name) {
 
 function UI_window_destroy(_name) {
     var _list = oUser_interface.UI_windows;
-    for(var i = 0; i < ds_list_size(_list); i++) {
-        if(_list[| i].name == _name) {
-            ds_list_delete(_list, i);
-            return true;
-        }
-    }
-    return false;
+	if(ds_exists(_list, ds_type_list)) {
+	    for(var i = 0; i < ds_list_size(_list); i++) {
+	        if(_list[| i].name == _name) {
+	            ds_list_delete(_list, i);
+	            return true;
+	        }
+	    }
+	    return false;
+	}
 }
 
 function UI_window_find(_name) {
@@ -356,7 +358,7 @@ function UI_draw(_element) {
 	            			// Highlights the text if needed
 	            			if(between(_element.text_highlight_index, _element.text_cursor_index, true, false, i)) {
 	            				var _highlight_color = _element.highlight_color;
-	            				draw_set_alpha(0.7);
+	            				draw_set_alpha(0.4);
 	            				draw_rectangle_color(_prev_draw_x, _text_draw_y, _text_draw_x-1, _text_draw_y + _element.line_seperation-1, _highlight_color, _highlight_color , _highlight_color, _highlight_color, false);
 	            				draw_set_alpha(1);
 	            			}
@@ -516,7 +518,7 @@ function UI_input(_element, _hovering) {
 	                            case vk_enter:
 	                            	var _add = "\n";
 	                            	var _tabs = 0;
-	                            	var _pos = _element.get_line_position(_element.get_line(_element.text_cursor_index));
+	                            	var _pos = _element.get_line_position(string_get_line(_element.text, _element.text_cursor_index));
 	                            	var _char = string_char_at(_element.text, _pos);
 	                            	while(_char == "\t" && _pos < _element.text_cursor_index) {
 	                            		_tabs++;
@@ -742,7 +744,7 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _text_co
     function move_cursor(_horizontal, _verticle, _drag) {
     	if(_verticle != 0) {
     		var _offset = offset_from_line(text_cursor_index);
-    		var _new_line = get_line(text_cursor_index) + _verticle;
+    		var _new_line = string_get_line(text, text_cursor_index) + _verticle;
     		
     		text_cursor_index = add_offset_on_line(_new_line, _offset);
 		}
@@ -759,7 +761,7 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _text_co
     // character space
     function offset_from_line(_pos) {
     	var _offset = 0;
-    	var _line_pos = get_line_position(get_line(_pos));
+    	var _line_pos = get_line_position(string_get_line(text, _pos));
     	while(_line_pos < _pos) {
     		_offset += get_char_offset(string_char_at(text, _line_pos), _offset);
     		_line_pos++;
@@ -784,11 +786,6 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _text_co
 		}
 	}
 	
-	// Get's the line that a certain position on the text is
-    function get_line(_pos) {
-    	var _cut_string = string_copy(text, 1, _pos-1);
-    	return string_count("\n", _cut_string);
-    }
     
     // Get's the position of the start of a line
     function get_line_position(_line) {

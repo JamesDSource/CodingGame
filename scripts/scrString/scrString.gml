@@ -58,3 +58,8 @@ function string_from_real(_real) {
 	}
 	return _return_string;
 }
+
+function string_get_line(_str, _pos) {
+   	var _cut_string = string_copy(_str, 1, _pos-1);
+   	return string_count("\n", _cut_string);
+}

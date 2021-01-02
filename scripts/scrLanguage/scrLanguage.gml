@@ -29,18 +29,18 @@ function error(_type, _pos) constructor {
 		msg = "Missing node expected";
 	}
 	function array_out_of_range_error() {
-		msg = "Index out of range in array"
+		msg = "Index out of range in array";
 	}
 	
-	function get_error() {
+	function get_error(text) {
 		var _error_message = prefix_msg + msg;
-		if(pos != -1) _error_message += ", at line " + string(pos);
+		if(pos != -1) _error_message += ", at line " + string(string_get_line(text, pos) + 1);
 		return _error_message;
 	}
 }
 
 function is_error(_struct) {
-	if(is_struct(_struct) && variable_struct_exists(_struct, "struct_is_error") && _struct.struct_is_error) return true
+	if(is_struct(_struct) && variable_struct_exists(_struct, "struct_is_error") && _struct.struct_is_error) return true;
 	else return false;
 }
 
@@ -319,7 +319,7 @@ function get_tokens(_code) {
 				break;
 			case "+": // Addition
 				array_push(_tokens, new token(TOKENTYPE.ADD, _char, i, i+1));
-				break
+				break;
 			case "*": // Multiplication
 				array_push(_tokens, new token(TOKENTYPE.MULT, _char, i, i+1));
 				break;
@@ -333,7 +333,13 @@ function get_tokens(_code) {
 				array_push(_tokens, new token(TOKENTYPE.POWER, _char, i, i+1));
 				break;
 			case "/": // Divition
-				array_push(_tokens, new token(TOKENTYPE.DIVIDE, _char, i, i+1));
+				if(i + 1 <= _text_len && string_char_at(_code, i + 1) == "/") {
+					for(var j = i; j <= _text_len; j++) {
+						if(string_char_at(_code, j) == "\n") break;
+						i = j;
+					}
+				}
+				else array_push(_tokens, new token(TOKENTYPE.DIVIDE, _char, i, i+1));
 				break;
 			case "(": // Opening parenthesis
 				array_push(_tokens, new token(TOKENTYPE.OPEN_PAREN, _char, i, i+1));
@@ -357,7 +363,7 @@ function get_tokens(_code) {
 				array_push(_tokens, new token(TOKENTYPE.COMMA, _char, i, i+1));
 				break;
 			case "!": // Not
-				if(i + 1 < _text_len && string_char_at(_code, i+1) == "=") {
+				if(i + 1 <= _text_len && string_char_at(_code, i+1) == "=") {
 					array_push(_tokens, new token(TOKENTYPE.NOT_EQUALS, "!=", i, i+2));
 					i++;
 				}
@@ -370,17 +376,20 @@ function get_tokens(_code) {
 #endregion
 #region Parser
 #region Nodes for the parser
-function parse_node_number(_value) constructor {
+function parse_node_number(_value, _pos) constructor {
 	node_name = "Number";
+	position = _pos;
 	value = _value;
+	
 	
 	function to_string() {
 		return string(value);
 	}
 }
 
-function parse_node_string(_value) constructor {
+function parse_node_string(_value, _pos) constructor {
 	node_name = "String";
+	position = _pos;
 	value = _value;
 	
 	function to_string() {
@@ -388,8 +397,9 @@ function parse_node_string(_value) constructor {
 	}
 }
 
-function parse_node_binary_operation(_left, _right, _operation) constructor {
+function parse_node_binary_operation(_left, _right, _operation, _pos) constructor {
 	node_name = "Binary operation";
+	position = _pos;
 	left = _left;
 	right = _right;
 	operation = _operation.type;
@@ -408,8 +418,9 @@ function parse_node_binary_operation(_left, _right, _operation) constructor {
 	}
 }
 
-function parse_node_unary_operation(_operation, _node) constructor {
+function parse_node_unary_operation(_operation, _node, _pos) constructor {
 	node_name = "Unary operation";
+	position = _pos;
 	operation = _operation.type;
 	node = _node;
 	
@@ -419,8 +430,9 @@ function parse_node_unary_operation(_operation, _node) constructor {
 	}
 }
 
-function parse_node_variable(_name, _index) constructor {
+function parse_node_variable(_name, _index, _pos) constructor {
 	node_name = "Variable";
+	position = _pos;
 	variable_name = _name;
 	index = _index;
 	
@@ -429,8 +441,9 @@ function parse_node_variable(_name, _index) constructor {
 	}
 }
 
-function parse_node_assignment(_variable_name, _value, _index) constructor {
+function parse_node_assignment(_variable_name, _value, _index, _pos) constructor {
 	node_name = "Assignment";
+	position = _pos;
 	variable_name = _variable_name;
 	value = _value;
 	index = _index;
@@ -440,22 +453,25 @@ function parse_node_assignment(_variable_name, _value, _index) constructor {
 	}
 }
 
-function parse_node_if(_cases, _else_case) constructor {
+function parse_node_if(_cases, _else_case, _pos) constructor {
 	node_name = "If";
+	position = _pos;
 	cases = _cases;
 	else_case = _else_case;
 }
 
-function parse_node_loop(_count_expression, _body) constructor {
+function parse_node_loop(_count_expression, _body, _pos) constructor {
 	node_name = "Loop";
+	position = _pos;
 	count_expression = _count_expression;
 	body = _body;
 	
 	break_out = false;
 }
 
-function parse_node_for(_variable_name, _list_expression, _body) constructor {
+function parse_node_for(_variable_name, _list_expression, _body, _pos) constructor {
 	node_name = "For";
+	position = _pos;
 	variable_name = _variable_name;
 	list_expression = _list_expression;
 	body = _body;
@@ -463,33 +479,38 @@ function parse_node_for(_variable_name, _list_expression, _body) constructor {
 	break_out = false;
 }
 
-function parse_node_list(_expression_list) constructor {
+function parse_node_list(_expression_list, _pos) constructor {
 	node_name = "List";
+	position = _pos;
 	expression_list = _expression_list;
 	list_stop = false;
 }
 
-function parse_node_func(_variable_name, _arguments, _body) constructor {
+function parse_node_func(_variable_name, _arguments, _body, _pos) constructor {
 	node_name = "Func";
+	position = _pos;
 	variable_name = _variable_name;
 	arguments = _arguments;
 	body = _body;
 }
 
-function parse_node_call(_identifier, _arguments) constructor {
+function parse_node_call(_identifier, _arguments, _pos) constructor {
 	node_name = "Call";
+	position = _pos;
 	identifier = _identifier;
 	arguments = _arguments;
 	return_value = undefined;
 }
 
-function parse_node_return(_expression) constructor {
+function parse_node_return(_expression, _pos) constructor {
 	node_name = "Return";
+	position = _pos;
 	expression = _expression;
 }
 
-function parse_node_break() constructor {
+function parse_node_break(_pos) constructor {
 	node_name = "Break";
+	position = _pos;
 }
 
 #endregion
@@ -532,14 +553,14 @@ function parser(_tokens) constructor {
 			if(advance()) {
 				var _right_factor = _func();
 				if(is_error(_right_factor)) return _right_factor;
-				_left_factor = new parse_node_binary_operation(_left_factor, _right_factor, _operation_token);
+				_left_factor = new parse_node_binary_operation(_left_factor, _right_factor, _operation_token, _operation_token.start_pos);
 			}
 			else break;
 		}
 		return _left_factor;
 	}
 	
-	function if_statement() {
+	function if_statement(_pos) {
 		var _cases = [];
 		var _else_expression = undefined;
 		function check_for_condition_expression(_cond) {
@@ -612,10 +633,10 @@ function parser(_tokens) constructor {
 			if(is_error(_else_condition_statements)) return _else_condition_statements;
 			_else_expression =  _else_condition_statements;
 		}
-		return new parse_node_if(_cases, _else_expression);
+		return new parse_node_if(_cases, _else_expression, _pos);
 	}
 	
-	function loop_statement() {
+	function loop_statement(_pos) {
 		if(advance()) {
 			var _condition = expression();
 			if(is_error(_condition)) return _condition;
@@ -640,16 +661,16 @@ function parser(_tokens) constructor {
 				if(current_token.type == TOKENTYPE.OPEN_CURLY) _eq_value++;
 				else if(current_token.type == TOKENTYPE.CLOSE_CURLY) _eq_value--;
 				if(_eq_value != 0) {
-					_bodyarray_push(_body_tokens, current_token);
+					array_push(_body_tokens, current_token);
 				}
 			}
 			
 			var _loop_parser = new parser(_body_tokens);
 			var _body = _loop_parser.get_AST();
-			if(is_error(_body)) return _body
+			if(is_error(_body)) return _body;
 			delete _loop_parser;
 			advance();
-			return new parse_node_loop(_condition, _body);
+			return new parse_node_loop(_condition, _body, _pos);
 		}
 		else {
 			var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
@@ -658,7 +679,7 @@ function parser(_tokens) constructor {
 		}
 	}
 	
-	function for_statement() {
+	function for_statement(_pos) {
 		advance();
 		
 		// Check if the token is not a variable
@@ -718,10 +739,10 @@ function parser(_tokens) constructor {
 		delete _body_parser;
 		if(is_error(_body)) return _body;
 		advance();
-		return new parse_node_for(_variable_name, _expression, _body);
+		return new parse_node_for(_variable_name, _expression, _body, _pos);
 	}
 	
-	function list_statement() {
+	function list_statement(_pos) {
 		if(advance()) {
 			var _list = [];
 			if(current_token.type != TOKENTYPE.CLOSE_BRACKET) {
@@ -746,11 +767,11 @@ function parser(_tokens) constructor {
 					return _error;
 				}
 				advance();
-				return new parse_node_list(_list);
+				return new parse_node_list(_list, _pos);
 			}
 			else {
 				advance();
-				return new parse_node_list([]);
+				return new parse_node_list([], _pos);
 			}
 		}
 		else {
@@ -760,7 +781,7 @@ function parser(_tokens) constructor {
 		}
 	}
 	
-	function func_statement() {
+	function func_statement(_pos) {
 		var _parameters = [];
 		var _variable_name = "";
 		
@@ -844,7 +865,7 @@ function parser(_tokens) constructor {
 		delete _body_parser;
 		
 		advance();
-		return new parse_node_func(_variable_name, _parameters, _body);
+		return new parse_node_func(_variable_name, _parameters, _body, _pos);
 	}
 	
 	function atom() {
@@ -868,12 +889,12 @@ function parser(_tokens) constructor {
 			
 			case TOKENTYPE.NUMBER:
 				advance();
-				return new parse_node_number(_return_token.value);
+				return new parse_node_number(_return_token.value, _return_token.start_pos);
 				break;
 			
 			case TOKENTYPE.STRING:
 				advance();
-				return new parse_node_string(_return_token.value);
+				return new parse_node_string(_return_token.value, _return_token.start_pos);
 				break;
 				
 			case TOKENTYPE.METHOD:
@@ -895,7 +916,7 @@ function parser(_tokens) constructor {
 					if(current_token.type != TOKENTYPE.CLOSE_PAREN) {
 						var _expression = expression();
 						if(is_error(_expression)) return _expression;
-						_parameters = [_expression]
+						_parameters = [_expression];
 						remove_newlines();
 						while(current_token.type == TOKENTYPE.COMMA) {
 							if(!advance()) break;
@@ -916,7 +937,7 @@ function parser(_tokens) constructor {
 						}
 						advance();
 					}
-					return new parse_node_call(_identifier, _parameters);
+					return new parse_node_call(_identifier, _parameters, _return_token.start_pos);
 				}
 				else if(_return_token.type == TOKENTYPE.VARIABLE) { // Checking for a variable refrence
 					// Checking for the index if this is a variable array
@@ -940,7 +961,7 @@ function parser(_tokens) constructor {
 							return _error;
 						}
 					}
-					return new parse_node_variable(_return_token.value, _index);
+					return new parse_node_variable(_return_token.value, _index, _return_token.start_pos);
 				}
 				else {
 					var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
@@ -950,23 +971,23 @@ function parser(_tokens) constructor {
 				break;
 			
 			case TOKENTYPE.IF:
-				return if_statement();
+				return if_statement(_return_token.start_pos);
 				break;
 			
 			case TOKENTYPE.LOOP:
-				return loop_statement();
+				return loop_statement(_return_token.start_pos);
 				break;			
 			
 			case TOKENTYPE.FOR:
-				return for_statement();
+				return for_statement(_return_token.start_pos);
 				break;
 			
 			case TOKENTYPE.OPEN_BRACKET:
-				return list_statement();
+				return list_statement(_return_token.start_pos);
 				break;
 			
 			case TOKENTYPE.FUNC:
-				return func_statement();
+				return func_statement(_return_token.start_pos);
 				break;
 	
 			default:
@@ -988,9 +1009,9 @@ function parser(_tokens) constructor {
 			case TOKENTYPE.SUBTRACT:
 			case TOKENTYPE.NOT:
 				if(advance()) {
-					var _unary_node_wrap = factor()
+					var _unary_node_wrap = factor();
 					if(is_error(_unary_node_wrap)) return _unary_node_wrap;
-					return new parse_node_unary_operation(_return_token, _unary_node_wrap);
+					return new parse_node_unary_operation(_return_token, _unary_node_wrap, _return_token.start_pos);
 				}
 				else{
 					var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
@@ -1000,7 +1021,7 @@ function parser(_tokens) constructor {
 				break;
 		}
 		
-		return pow()
+		return pow();
 	}
 	
 	function term() {
@@ -1020,17 +1041,17 @@ function parser(_tokens) constructor {
 		if(current_token.type == TOKENTYPE.RETURN) {
 			if(!advance()) {
 				var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
-				_error.msg = "Expression expected"
+				_error.msg = "Expression expected";
 				return _error;
 			}
 				
 			var _expression = expression();
 			if(is_error(_expression)) return _expression;
 				
-			return new parse_node_return(_expression);
+			return new parse_node_return(_expression, current_token.start_pos);
 		}		
 		else if(current_token.type == TOKENTYPE.BREAK) {
-			return new parse_node_break();
+			return new parse_node_break(current_token.start_pos);
 		}
 		else if(current_token.type == TOKENTYPE.VARIABLE && (peek_token.type == TOKENTYPE.ASSIGN || peek_token.type == TOKENTYPE.OPEN_BRACKET)) {
 			var _variable_name = current_token.value;
@@ -1065,11 +1086,12 @@ function parser(_tokens) constructor {
 			
 			if(_assignment_statement) {
 				advance();
+				var _pos = current_token.start_pos;
 				if(advance()) {
 					// Checking for an index of an array
 					var _expression = expression();
 					if(is_error(_expression)) return _expression;
-					else return new parse_node_assignment(_variable_name, _expression, _index);
+					else return new parse_node_assignment(_variable_name, _expression, _index, _pos);
 				}
 				else { // Check if there is no expression after the assignment
 					var _error = new error(ERRORTYPE.SYNTAX, current_token.start_pos);
@@ -1085,6 +1107,8 @@ function parser(_tokens) constructor {
 		var _statements = [];
 		
 		remove_newlines();
+		
+		var _pos = current_token.start_pos;
 		
 		var _first_statement = expression();
 		if(is_error(_first_statement)) return _first_statement;
@@ -1106,11 +1130,11 @@ function parser(_tokens) constructor {
 			else {
 				var _statement = expression(); 
 				if(is_error(_statement)) return _statement;
-				array_push(_statements, _statement)
+				array_push(_statements, _statement);
 			}
 		}
 		
-		return new parse_node_list(_statements);
+		return new parse_node_list(_statements, _pos);
 	}
 	
 	function get_AST() {
@@ -1145,10 +1169,10 @@ function scope(_parent) constructor {
 	function set_value(_var_name, _value, _look_for_parent) {
 		if(_look_for_parent && !variable_struct_exists(data, _var_name) && is_struct(parent)) {
 			var _tree = parent;
-			var _var_search = true
+			var _var_search = true;
 			while(_var_search) {
 				if(variable_struct_exists(_tree.data, _var_name)) {
-					_tree.data[$ _var_name] = _value
+					_tree.data[$ _var_name] = _value;
 					return undefined;
 				}
 				else if(is_struct(_tree.parent)) _tree = _tree.parent;
@@ -1181,12 +1205,11 @@ function interpreter() constructor {
 	
 	function run(_AST) {
 		if(is_struct(_AST)) {
-			if(is_error(_AST)) show_debug_message(_AST.get_error());
+			if(is_error(_AST)) return _AST;
 			else {
 				add_scope_layer();
 				var _run_result = get_result(_AST, -1);
-				if(is_error(_run_result)) show_debug_message(_run_result.get_error());
-				else show_debug_message(_run_result);
+				return _run_result;
 				while(is_struct(current_scope)) remove_scope_layer();
 			};
 		}
@@ -1226,7 +1249,7 @@ function interpreter() constructor {
 							_left_result = string(_left_result);
 						}
 						else if(!is_real(_left_result) || !is_real(_right_result)) {
-							var _error = new error(ERRORTYPE.RUN_TIME, -1);
+							var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
 							_error.msg = "Invalid type";
 							return _error;
 							
@@ -1234,14 +1257,14 @@ function interpreter() constructor {
 						return _left_result + _right_result; break;
 					case TOKENTYPE.SUBTRACT:
 						if(!is_real(_right_result) || !is_real(_left_result)) {
-							var _error = new error(ERRORTYPE.RUN_TIME, -1);
+							var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
 							_error.msg = "Invalid type";
 							return _error;
 						}
 						return _left_result - _right_result; break;
 					case TOKENTYPE.MULT:			
 						if(!is_real(_right_result) || !is_real(_left_result)) {
-							var _error = new error(ERRORTYPE.RUN_TIME, -1);
+							var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
 							_error.msg = "Invalid type";
 							return _error;
 						}
@@ -1249,7 +1272,7 @@ function interpreter() constructor {
 						break;
 					case TOKENTYPE.POWER:			
 						if(!is_real(_right_result) || !is_real(_left_result)) {
-							var _error = new error(ERRORTYPE.RUN_TIME, -1);
+							var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
 							_error.msg = "Invalid type";
 							return _error;
 						}
@@ -1258,13 +1281,13 @@ function interpreter() constructor {
 					case TOKENTYPE.MOD:
 					case TOKENTYPE.DIVIDE:
 						if(!is_real(_right_result) || !is_real(_left_result)) {
-							var _error = new error(ERRORTYPE.RUN_TIME, -1);
+							var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
 							_error.msg = "Invalid type";
 							return _error;
 						}
 					
 						if(_right_result == 0) {
-							var _error = new error(ERRORTYPE.RUN_TIME, -1);
+							var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
 							_error.msg = "Attempted to divide by 0";
 							return _error;
 						}
@@ -1288,8 +1311,8 @@ function interpreter() constructor {
 				var _return_result = get_result(_node.node, _node);
 				if(!is_error(_return_result)) {
 					if(!is_real(_return_result)) {
-						var _error = new error(ERRORTYPE.RUN_TIME, -1);
-						_error.msg = "Invalid type"
+						var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
+						_error.msg = "Invalid type";
 						return _error;
 					}
 					
@@ -1309,8 +1332,8 @@ function interpreter() constructor {
 			case "Variable":
 				var _return_result = current_scope.get_value(_node.variable_name);
 				if(is_undefined(_return_result)) {
-					var _error = new error(ERRORTYPE.RUN_TIME, -1);
-					_error.msg = _node.variable_name + " is undefined in the current scope"
+					var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
+					_error.msg = _node.variable_name + " is undefined in the current scope";
 					return _error;
 				}
 				
@@ -1320,14 +1343,14 @@ function interpreter() constructor {
 					
 					if(is_real(_index_value)) _index_value = floor(_index_value);
 					else {
-						var _error = new error(ERRORTYPE.RUN_TIME, -1);
+						var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
 						_error.invalid_type_error("int");
 						return _error;
 					}
 					
 					if(is_array(_return_result)) {
 						if(_index_value < 0 || _index_value >= array_length(_return_result)) {
-							var _error = new error(ERRORTYPE.RUN_TIME, -1);
+							var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
 							_error.array_out_of_range_error();
 							return _error;
 						}
@@ -1352,13 +1375,13 @@ function interpreter() constructor {
 						
 						if(is_real(_index)) _index = floor(_index);
 						else {
-							var _error = new error(ERRORTYPE.RUN_TIME, -1);
+							var _error = new error(ERRORTYPE.RUN_TIME, _node.index.position);
 							_error.invalid_type_error("int");
 							return _error;
 						}
 						
 						if(_index < 0) {
-							var _error = new error(ERRORTYPE.RUN_TIME, -1);
+							var _error = new error(ERRORTYPE.RUN_TIME, _node.index.position);
 							_error.array_out_of_range_error();
 							return _error;
 						}
@@ -1402,7 +1425,7 @@ function interpreter() constructor {
 				// Check if count is a number
 				if(is_real(_count)) _count = floor(_count);
 				else {
-					var _error = new error(ERRORTYPE.RUN_TIME, -1);
+					var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
 					_error.missing_number_error();
 					return _error;
 				}
@@ -1422,8 +1445,8 @@ function interpreter() constructor {
 				if(is_error(_list_expression_result)) return _list_expression_result;
 				
 				if(!is_array(_list_expression_result)) {
-					var _error = new error(ERRORTYPE.RUN_TIME, -1);
-					_error.msg = "Array expected after keyword \"in\""
+					var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
+					_error.msg = "Array expected after keyword \"in\"";
 					return _error;
 				}
 				
@@ -1459,7 +1482,7 @@ function interpreter() constructor {
 						func: function(_arguments, _parameters, _body, _scope, _get_result, _call) {
 							// Check if there are enough arguments
 							if(array_length(_arguments) < array_length(_parameters)) {
-								var _error = new error(ERRORTYPE.RUN_TIME, -1);
+								var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
 								_error.msg = "More arguments expected";
 								return _error;
 							}
@@ -1482,14 +1505,14 @@ function interpreter() constructor {
 				
 				// Check if it is defined
 				if(is_undefined(_call_method_function)) {
-					var _error = new error(ERRORTYPE.RUN_TIME, -1);
+					var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
 					_error.msg = _node.identifier + " is undefined in the current scope";
 					return _error;
 				}				
 				
 				// Check if it is a method or function
 				if(!is_struct(_call_method_function)) {
-					var _error = new error(ERRORTYPE.RUN_TIME, -1);
+					var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
 					_error.msg = _node.identifier + " is not a method or function";
 					return _error;
 				}
@@ -1506,7 +1529,7 @@ function interpreter() constructor {
 				_call_method_function.func(_arguments, _call_method_function.node.arguments, _call_method_function.node.body, current_scope, get_result, _node);
 				remove_scope_layer();
 				
-				var _return = _node.return_value
+				var _return = _node.return_value;
 				_node.return_value = undefined;
 				return _return;
 				break;
@@ -1531,7 +1554,7 @@ function interpreter() constructor {
 					_tree = _tree.parent_node;
 				}
 				if(!_call_found) {
-					var _error = new error(ERRORTYPE.RUN_TIME, -1);
+					var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
 					_error.msg = "Could not find a function to return";
 					return _error;
 				}
@@ -1554,14 +1577,14 @@ function interpreter() constructor {
 					_tree = _tree.parent_node;
 				}
 				if(!_loop_found) {
-					var _error = new error(ERRORTYPE.RUN_TIME, -1);
+					var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
 					_error.msg = "Could not find anything to break out of";
 					return _error;
 				}
 				break;
 			
 			default: // If there is no return condition for this node, then return an error
-				var _error = new error(ERRORTYPE.RUN_TIME, -1);
+				var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
 				_error.node_not_found_error(_node.node_name);
 				return _error;
 				break;

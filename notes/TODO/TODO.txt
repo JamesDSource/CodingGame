@@ -16,13 +16,11 @@ Text box:
     -add syntax error messages
 
 Tab selection:
-	- Allow tabs to be reordered
+	-allow tabs to be reordered
 
 Language:
     -add the ability for the "in" keyword to work like python
     -add built in functions
-    -add the ability for runtime errors to know what line they're on
-    -add comments 
 
 Terminal:
     -add a button to switch between terminal and game view
