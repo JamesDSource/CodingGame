@@ -3,7 +3,7 @@ Statements		: NEWLINE*, Expression, (NEWLINE+, Expression), NEWLINE*
 Expression		: VAR, VARIABLE, (OPEN BRACKET, INT, CLOSE BRACKET), ASSIGNMENT, Expression
 				: Comparison, AND/OR, Comparison
 			
-Comparison		: Arithmatic, COMPARISON(==, <=, <, >, >=, !=), Arithmatic
+Comparison		: Arithmatic, COMPARISON(==, <=, <, >, >=, !=, in), Arithmatic
 			
 Arithmatic		: Term, PLUS/MINUS, Term
 			

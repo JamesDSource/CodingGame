@@ -730,7 +730,7 @@ function parser(_tokens) constructor {
 			if(current_token.type == TOKENTYPE.OPEN_CURLY) _eq_value++;
 			else if(current_token.type == TOKENTYPE.CLOSE_CURLY) _eq_value--;
 			if(_eq_value != 0) {
-				_bodyarray_push(_body_tokens, current_token);
+				array_push(_body_tokens, current_token);
 			}
 		}
 		
@@ -1033,7 +1033,7 @@ function parser(_tokens) constructor {
 	}
 	
 	function comparison() {
-		return binary_operation(arithmatic, [TOKENTYPE.EQUALS, TOKENTYPE.GREATER, TOKENTYPE.LESSER, TOKENTYPE.GREATER_EQUAL, TOKENTYPE.LESSER_EQUAL, TOKENTYPE.NOT_EQUALS]);
+		return binary_operation(arithmatic, [TOKENTYPE.EQUALS, TOKENTYPE.GREATER, TOKENTYPE.LESSER, TOKENTYPE.GREATER_EQUAL, TOKENTYPE.LESSER_EQUAL, TOKENTYPE.NOT_EQUALS, TOKENTYPE.IN]);
 	}
 	
 	function expression() {
@@ -1304,6 +1304,20 @@ function interpreter() constructor {
 					case TOKENTYPE.NOT_EQUALS:		return _left_result != _right_result; break;
 					case TOKENTYPE.AND:				return _left_result && _right_result; break;
 					case TOKENTYPE.OR:				return _left_result || _right_result; break;
+					
+					case TOKENTYPE.IN:
+						if(is_array(_right_result)) {
+							return array_has(_right_result, _left_result);
+						}
+						else if(is_string(_right_result)) {
+							return string_pos(string(_left_result), _right_result) != 0;
+						}
+						else {
+							var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
+							_error.msg = "Invalid type";
+							return _error;
+						}
+						break;
 				}
 				break;
 			
@@ -1544,7 +1558,7 @@ function interpreter() constructor {
 						_tree.list_stop = true;
 					}
 					else if(_tree.node_name == "Call") {
-						var _result = get_result(_node.expression);
+						var _result = get_result(_node.expression, _node);
 						if(is_error(_result)) return _result;
 						
 						_tree.return_value = _result;

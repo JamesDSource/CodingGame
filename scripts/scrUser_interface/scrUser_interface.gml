@@ -333,9 +333,13 @@ function UI_draw(_element) {
             for(var i = 1; i <= string_length(_element.text) + 1; i++) {
             	draw_set_color(_element.font_color);
             	
+            	if(_element.highlighting.text == _element.text && !is_undefined(_element.highlighting.colors[i-1])) {
+            		draw_set_color(_element.highlighting.colors[i-1]);
+            	}
+            	
             	// Draw the cursor
             	if(_element.selected && _element.text_cursor_index == i) {
-            		draw_text(_text_draw_x - _element.char_seperation/2, _text_draw_y, "|");
+            		draw_text_color(_text_draw_x - _element.char_seperation/2, _text_draw_y, "|", _element.font_color, _element.font_color, _element.font_color, _element.font_color, draw_get_alpha());
             	}
             	
             	if(i <= string_length(_element.text)) {
@@ -438,10 +442,10 @@ function UI_input(_element, _hovering) {
         
         case "Text box":
         	// getting the mouse position relative to the text box
-        	    var _mouse_offset = {
-					x: device_mouse_x_to_gui(0) - (_element.rect.x + _element.text_margin),
-					y: device_mouse_y_to_gui(0) - (_element.rect.y + _element.text_margin)
-				}
+        	var _mouse_offset = {
+				x: device_mouse_x_to_gui(0) - (_element.rect.x + _element.text_margin),
+				y: device_mouse_y_to_gui(0) - (_element.rect.y + _element.text_margin)
+			}
 			var _line_offset = _mouse_offset.x div _element.char_seperation;
 			var _line = _mouse_offset.y div _element.line_seperation;
 			
@@ -542,6 +546,10 @@ function UI_input(_element, _hovering) {
                     }
                     else if(!keyboard_check(_keycode)) _key_timer.subtract = 0;
                 }
+            	if(_element.treat_as_code && _element.highlighting.text != _element.text) {
+            		_element.tokens = get_tokens(_element.text);
+            		_element.set_syntax_highlighting(_element.tokens);
+            	}
             }
             break;
     }
@@ -845,6 +853,61 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _text_co
     		text_cursor_index = timeline[timeline_pos].cursor_pos;
     	}
     }
+    
     save_state();
+    
+    // Code features
+    treat_as_code = false;
+    tokens = [];
+    
+    // Syntax highlighting
+    highlighting = {
+    	text: "",
+    	colors: []
+    };
+    function set_syntax_highlighting(_tokens) {
+    	highlighting.text = text;
+    	highlighting.colors = array_create(string_length(text), undefined);
+    	for(var i = 0; i < array_length(_tokens); i++) {
+    		var _current_token = _tokens[i];
+    		var _color = undefined;
+    		switch(_current_token.type) {
+    			case TOKENTYPE.IF:
+    			case TOKENTYPE.ELIF:
+    			case TOKENTYPE.ELSE:
+    			case TOKENTYPE.LOOP:
+    			case TOKENTYPE.FOR:
+    			case TOKENTYPE.IN:
+    			case TOKENTYPE.FUNC:
+    			case TOKENTYPE.RETURN:
+    			case TOKENTYPE.BREAK:
+    			case TOKENTYPE.OPEN_CURLY:
+    			case TOKENTYPE.CLOSE_CURLY:
+    				_color = c_orange;
+    				break;
+    			
+    			case TOKENTYPE.STRING:
+    				_color = c_lime;
+    				break;
+    			
+    			case TOKENTYPE.NUMBER:
+    				_color = c_red;
+    				break;
+    			
+    			case TOKENTYPE.VARIABLE:
+    				_color = c_aqua;
+    				if((i > 0 && _tokens[i-1].type == TOKENTYPE.FUNC) || i < array_length(_tokens)-1 && _tokens[i+1].type == TOKENTYPE.OPEN_PAREN) {
+    					_color = c_fuchsia;
+    				}
+    				break;
+    		}
+    		
+    		if(!is_undefined(_color)) {
+    			for(var j = _current_token.start_pos; j <= _current_token.end_pos; j++) {
+    				highlighting.colors[j-1] = _color;
+    			}
+    		}
+    	}
+    }
 }
 #endregion

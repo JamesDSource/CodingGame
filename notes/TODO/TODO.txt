@@ -12,14 +12,12 @@ Text box:
     -add sliders and scrolling
     -add a sidebar that shows the lines
     -add a code helper mode that autofills code like GMEdit does
-    -add syntax highlighting
     -add syntax error messages
 
 Tab selection:
 	-allow tabs to be reordered
 
 Language:
-    -add the ability for the "in" keyword to work like python
     -add built in functions
 
 Terminal:
