@@ -17,9 +17,6 @@ Text box:
 Tab selection:
 	-allow tabs to be reordered
 
-Language:
-    -add built in functions
-
 Terminal:
     -add a button to switch between terminal and game view
     -add output window

@@ -139,7 +139,7 @@ function token(_type, _value, _start_pos, _end_pos) constructor {
 	}
 }
 
-function get_tokens(_code) {
+function get_tokens(_code, _libraries) {
 	var _tokens = [];
 	var _text_len = string_length(_code);
 	
@@ -235,16 +235,16 @@ function get_tokens(_code) {
 				
 				// Looking to see if symbol is a function
 				var _function_data = -1;
-				//for(var j = 0; j < ds_list_size(included_functions); j++) {
-				//	for(var k = 0; k < array_length(included_functions[| j].methods); k++) {
-				//		if(included_functions[| j].methods[k].name == _symbol) {
-				//			_function_data = included_functions[| j].methods[k];
-				//			break;
-				//		}
-				//	}
-				//}
+				for(var j = 0; j < array_length(_libraries); j++) {
+					for(var k = 0; k < array_length(_libraries[j].methods); k++) {
+						if(_libraries[j].methods[k].name == _symbol) {
+							_function_data = _libraries[j].methods[k];
+							break;
+						}
+					}
+				}
 				
-				if(_function_data != -1) array_push(_tokens, new token(TOKENTYPE.FUNCTION, _function_data, _symbol_start, _peek_index));
+				if(_function_data != -1) array_push(_tokens, new token(TOKENTYPE.METHOD, _function_data, _symbol_start, _peek_index));
 				else array_push(_tokens, new token(TOKENTYPE.VARIABLE, _symbol, _symbol_start, _peek_index));
 				break;
 			case "0": // Numbers
@@ -492,6 +492,13 @@ function parse_node_func(_variable_name, _arguments, _body, _pos) constructor {
 	variable_name = _variable_name;
 	arguments = _arguments;
 	body = _body;
+}
+
+function parse_node_method(_func, _arguments, _pos) constructor{
+	node_name = "Method";
+	position = _pos;
+	func = _func;
+	arguments = _arguments;
 }
 
 function parse_node_call(_identifier, _arguments, _pos) constructor {
@@ -935,9 +942,15 @@ function parser(_tokens) constructor {
 							_error.missing_char_error(")");
 							return _error;
 						}
-						advance();
 					}
-					return new parse_node_call(_identifier, _parameters, _return_token.start_pos);
+					advance();
+					
+					if(_return_token.type == TOKENTYPE.VARIABLE) {
+						return new parse_node_call(_identifier, _parameters, _return_token.start_pos);
+					}
+					else {
+						return new parse_node_method(_return_token.value, _parameters, _return_token.start_pos);
+					}
 				}
 				else if(_return_token.type == TOKENTYPE.VARIABLE) { // Checking for a variable refrence
 					// Checking for the index if this is a variable array
@@ -1546,6 +1559,76 @@ function interpreter() constructor {
 				var _return = _node.return_value;
 				_node.return_value = undefined;
 				return _return;
+				break;
+			
+			case "Method":
+				var _method_function = _node.func.method_call;
+				
+				if(array_length(_node.arguments) != array_length(_node.func.arguments)) {
+					var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
+					_error.msg = "Incorrect number of arguments for method \"" + _node.func.name + "\"";
+					return _error;
+				}
+				
+				_arguments = [];
+				for(var i = 0; i < array_length(_node.arguments); i++) {
+					_arguments[i] = get_result(_node.arguments[i]);
+					if(is_error(_arguments[i])) return _arguments[i];
+				}
+				
+				
+				for(var i = 0; i < array_length(_node.func.arguments); i++) {
+					var _parameter = _node.func.arguments[i];
+					var _incorrect_type = false;
+					
+					switch(_parameter[1]) {
+						case ARGUMENTTYPE.NUMBER:
+							_incorrect_type = !is_real(_arguments[i]);	
+							break;
+						case ARGUMENTTYPE.STRING:
+							_incorrect_type = !is_string(_arguments[i]);
+							break;
+						case ARGUMENTTYPE.ARRAY:
+							_incorrect_type = !is_array(_arguments[i]);
+							break;
+					}
+					
+					if(_incorrect_type) {
+						var _error = new error(ERRORTYPE.RUN_TIME, _node.position);
+						_error.msg = "Incorrect data type for parameter \"" + _parameter[0] + "\" in method \"" + _node.func.name + "\"";
+						return _error;
+					}
+				}
+				
+				switch(array_length(_arguments)) {
+					case 0:
+						return _method_function();
+						break;
+					case 1:
+						return _method_function(_arguments[0]); 
+						break;
+					case 2:
+						return _method_function(_arguments[0], _arguments[1]); 
+						break;
+					case 3:
+						return _method_function(_arguments[0], _arguments[1], _arguments[2]); 
+						break;
+					case 4:
+						return _method_function(_arguments[0], _arguments[1], _arguments[2], _arguments[3]); 
+						break;
+					case 5:
+						return _method_function(_arguments[0], _arguments[1], _arguments[2], _arguments[3], _arguments[4]); 
+						break;
+					case 6:
+						return _method_function(_arguments[0], _arguments[1], _arguments[2], _arguments[3], _arguments[4], _arguments[5]); 
+						break;
+					case 7:
+						return _method_function(_arguments[0], _arguments[1], _arguments[2], _arguments[3], _arguments[4], _arguments[5], _arguments[6]);
+						break;
+					case 8:
+						return _method_function(_arguments[0], _arguments[1], _arguments[2], _arguments[3], _arguments[4], _arguments[5], _arguments[6], _arguments[7]); 
+						break;
+				}
 				break;
 			
 			case "Return":

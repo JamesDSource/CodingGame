@@ -138,7 +138,7 @@ function UI_window_draw(_name) {
 // The path will look something like "Container1/StartButton", there is no need to put root,
 // to get the root element container, just put an empty string
 function UI_find_element(_name, _path) {
-    var _tokens = get_tokens(_path);
+    var _tokens = get_tokens(_path, []);
     var _tree = UI_window_find(_name);
     
     if(is_undefined(_tree)) throw "window " + _name + " does not exist";
@@ -547,7 +547,7 @@ function UI_input(_element, _hovering) {
                     else if(!keyboard_check(_keycode)) _key_timer.subtract = 0;
                 }
             	if(_element.treat_as_code && _element.highlighting.text != _element.text) {
-            		_element.tokens = get_tokens(_element.text);
+            		_element.tokens = get_tokens(_element.text, [global.standard_library]);
             		_element.set_syntax_highlighting(_element.tokens);
             	}
             }
@@ -879,6 +879,7 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _text_co
     			case TOKENTYPE.FOR:
     			case TOKENTYPE.IN:
     			case TOKENTYPE.FUNC:
+    			case TOKENTYPE.METHOD:
     			case TOKENTYPE.RETURN:
     			case TOKENTYPE.BREAK:
     			case TOKENTYPE.OPEN_CURLY:
@@ -895,9 +896,9 @@ function UI_element_text_box(_name, _sizing_type, _h_sizing, _v_sizing, _text_co
     				break;
     			
     			case TOKENTYPE.VARIABLE:
-    				_color = c_aqua;
+    				_color = c_silver;
     				if((i > 0 && _tokens[i-1].type == TOKENTYPE.FUNC) || i < array_length(_tokens)-1 && _tokens[i+1].type == TOKENTYPE.OPEN_PAREN) {
-    					_color = c_fuchsia;
+    					_color = c_yellow;
     				}
     				break;
     		}
