@@ -17,6 +17,9 @@ Text box:
 Tab selection:
 	-allow tabs to be reordered
 
+Language:
+	-Find a fix for bug in recursive functions
+
 Terminal:
     -add a button to switch between terminal and game view
     -add output window

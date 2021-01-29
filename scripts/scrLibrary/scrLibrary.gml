@@ -35,6 +35,27 @@ global.standard_library.add_method(
 	},
 	[["Number", ARGUMENTTYPE.NUMBER]]
 );
+global.standard_library.add_method(
+	"floor",
+	function(_number) {
+		return floor(_number);
+	},
+	[["Number", ARGUMENTTYPE.NUMBER]]
+);
+global.standard_library.add_method(
+	"ceil",
+	function(_number) {
+		return ceil(_number);
+	},
+	[["Number", ARGUMENTTYPE.NUMBER]]
+);
+global.standard_library.add_method(
+	"round",
+	function(_number) {
+		return round(_number);
+	},
+	[["Number", ARGUMENTTYPE.NUMBER]]
+);
 
 // Print
 global.standard_library.add_method(
@@ -68,3 +89,27 @@ global.standard_library.add_method(
 	},
 	[["List", ARGUMENTTYPE.ARRAY], ["Value", ARGUMENTTYPE.ANY]]
 );
+
+// Random
+global.standard_library.add_method(
+	"choose",
+	function(_items) {
+		return _items[irandom_range(0, array_length(_items)-1)];	
+	},
+	[["items", ARGUMENTTYPE.ARRAY]]
+);
+global.standard_library.add_method(
+	"rand_range",
+	function(_lower, _upper) {
+		return random_range(_lower, _upper);	
+	},
+	[["lower", ARGUMENTTYPE.NUMBER], ["upper", ARGUMENTTYPE.NUMBER]]
+);
+global.standard_library.add_method(
+	"randi_range",
+	function(_lower, _upper) {
+		return irandom_range(floor(_lower), floor(_upper));	
+	},
+	[["lower", ARGUMENTTYPE.NUMBER], ["upper", ARGUMENTTYPE.NUMBER]]
+);
+
